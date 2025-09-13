@@ -7,6 +7,7 @@ import hmac
 from app import schemas
 from app.database import SessionLocal
 from app.models import models
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -75,9 +76,14 @@ def login_with_voucher(login_data: schemas.LoginRequest, db: Session = Depends(g
 
     db.commit()
 
-    # In a real Meraki setup, you would redirect to the base_grant_url
-    # For now, we'll return a success message with a placeholder redirect
-    grant_url = "https://your-meraki-controller.com/guest/s/default/"  # Replace with actual Meraki URL
+    # Use the correct Meraki base grant URL from settings
+    # This constructs the full grant URL with parameters that Meraki expects
+    base_url = settings.MERAKI_BASE_GRANT_URL.rstrip('/')
+    
+    # For Meraki, you typically need to append parameters like:
+    # ?continue_url=<original_destination>&duration=<session_duration>
+    # The exact format depends on your Meraki network configuration
+    grant_url = f"{base_url}?user_id={account.email}&session_duration={voucher.duration}"
 
     return schemas.LoginResponse(
         success=True,

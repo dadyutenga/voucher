@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     # Meraki Configuration
     MERAKI_API_KEY: Optional[str] = None
-    MERAKI_BASE_GRANT_URL: str = "https://your-meraki-controller.com/guest/s/default/"
+    MERAKI_BASE_GRANT_URL: str = "https://n1116.meraki.com/guest/s/default/"
     MERAKI_NETWORK_ID: Optional[str] = None
 
     # Redis Configuration
