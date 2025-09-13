@@ -2,7 +2,10 @@ from pydantic_settings import BaseSettings
 from typing import Optional
 
 class Settings(BaseSettings):
+    # Database Configuration
     DATABASE_URL: str = "postgresql://user:pass@localhost/dbname"
+    
+    # Email/SMTP Configuration
     SMTP_SERVER: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
@@ -19,15 +22,30 @@ class Settings(BaseSettings):
     # General Payment Configuration
     DEFAULT_CURRENCY: str = "KES"
 
-    # Security
-    SECRET_KEY: Optional[str] = "your-secret-key-change-in-production"
+    # Application Configuration
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
 
     # Meraki Configuration
     MERAKI_API_KEY: Optional[str] = None
-    MERAKI_BASE_GRANT_URL: Optional[str] = "https://your-meraki-controller.com/guest/s/default/"
+    MERAKI_BASE_GRANT_URL: str = "https://your-meraki-controller.com/guest/s/default/"
     MERAKI_NETWORK_ID: Optional[str] = None
+
+    # Redis Configuration
+    REDIS_URL: Optional[str] = "redis://localhost:6379/0"
+
+    # Security and CORS
+    CORS_ORIGINS: str = "http://localhost:3000,https://yourdomain.com"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Rate Limiting
+    DEMO_VOUCHER_RATE_LIMIT: int = 3
+    DEMO_VOUCHER_RATE_WINDOW: int = 3600
 
     class Config:
         env_file = ".env"
+        # Allow extra fields to prevent validation errors
+        extra = "ignore"
 
 settings = Settings()

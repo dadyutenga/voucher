@@ -1,0 +1,72 @@
+[
+  {
+    "test": "Database Connection",
+    "success": true,
+    "message": "Successfully connected to database",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:12.690939"
+  },
+  {
+    "test": "Database Tables",
+    "success": true,
+    "message": "All required tables exist",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:12.991313"
+  },
+  {
+    "test": "Email Configuration",
+    "success": true,
+    "message": "SMTP server reachable and settings configured",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:13.238754"
+  },
+  {
+    "test": "Stripe Configuration",
+    "success": false,
+    "message": "Error testing Stripe: No module named 'stripe'",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:13.291881"
+  },
+  {
+    "test": "API Health",
+    "success": false,
+    "message": "Failed to reach health endpoint: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000224159F23E0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:17.737483"
+  },
+  {
+    "test": "API Documentation",
+    "success": false,
+    "message": "Failed to test API docs: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /docs (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000224159F25C0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:22.750708"
+  },
+  {
+    "test": "Splash Page",
+    "success": false,
+    "message": "Failed to load splash page: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /splash (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000224159F2DA0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:27.897474"
+  },
+  {
+    "test": "Voucher Plans",
+    "success": false,
+    "message": "Failed to get voucher plans: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /payment/plans (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000224159F3610>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:32.336751"
+  },
+  {
+    "test": "Admin Endpoints",
+    "success": false,
+    "message": "Only 0/4 admin endpoints accessible",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:49.192471"
+  },
+  {
+    "test": "Demo Voucher Creation",
+    "success": false,
+    "message": "Failed to create demo voucher: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /payment/create-demo-voucher?email=test%40example.com (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000224159F13F0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "details": null,
+    "timestamp": "2025-09-13T13:15:53.286980"
+  }
+]

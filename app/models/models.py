@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, DECIMAL, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, DECIMAL, Text, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -29,14 +29,14 @@ class Voucher(Base):
 
 class Transaction(Base):
     __tablename__ = "transactions"
-
+    
     id = Column(Integer, primary_key=True, index=True)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=True)
     voucher_id = Column(Integer, ForeignKey("vouchers.id"), nullable=True)
     amount = Column(DECIMAL, nullable=False)
     payment_method = Column(String, nullable=False)
     status = Column(String, nullable=False)
-    metadata = Column(Text, nullable=True)  # Store additional payment data as JSON
+    transaction_metadata = Column(JSON, nullable=True)  # Store additional payment data as JSON
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     account = relationship("Account", back_populates="transactions")

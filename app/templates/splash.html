@@ -640,7 +640,7 @@
 
                         planCard.innerHTML = `
                         <h3>${plan.name}</h3>
-                        <div class="plan-price">KES ${plan.price}</div>
+                        <div class="plan-price">TSH ${plan.price}</div>
                         <div class="plan-details">
                             <p>⏰ ${duration}</p>
                             <p>📊 ${dataInfo}</p>
@@ -705,15 +705,22 @@
                     </div>
                     <div class="payment-summary">
                         <h3>${planName}</h3>
-                        <p>Amount: KES ${price}</p>
+                        <p>Amount: TSH ${price}</p>
                         <p>Email: ${email}</p>
                     </div>
                     <div class="payment-methods">
-                        <div class="payment-method" onclick="processMPesaPayment('${planId}', ${price}, ${duration}, ${dataLimit || "null"}, '${email}')">
+                        <div class="payment-method" onclick="processTigoPesaPayment('${planId}', ${price}, ${duration}, ${dataLimit || "null"}, '${email}')">
                             <div class="payment-icon">📱</div>
                             <div class="payment-info">
-                                <h4>M-Pesa</h4>
-                                <p>Pay with M-Pesa mobile money</p>
+                                <h4>Tigo Pesa</h4>
+                                <p>Pay with Tigo Pesa mobile money</p>
+                            </div>
+                        </div>
+                        <div class="payment-method" onclick="processAirtelMoneyPayment('${planId}', ${price}, ${duration}, ${dataLimit || "null"}, '${email}')">
+                            <div class="payment-icon">💸</div>
+                            <div class="payment-info">
+                                <h4>Airtel Money</h4>
+                                <p>Pay with Airtel Money</p>
                             </div>
                         </div>
                         <div class="payment-method" onclick="processDummyPayment('${planId}', ${price}, ${duration}, ${dataLimit || "null"}, '${email}')">
@@ -729,8 +736,8 @@
                 document.body.appendChild(modal);
             }
 
-            // Process M-Pesa payment
-            window.processMPesaPayment = function (
+            // Process Tigo Pesa payment
+            window.processTigoPesaPayment = function (
                 planId,
                 price,
                 duration,
@@ -740,20 +747,47 @@
                 closePaymentModal();
 
                 const phoneNumber = prompt(
-                    "Enter your M-Pesa phone number (format: 254xxxxxxxxx):",
+                    "Enter your Tigo Pesa phone number (format: 255xxxxxxxxx):",
                 );
                 if (!phoneNumber) return;
 
                 // Validate phone number
-                if (!/^254[0-9]{9}$/.test(phoneNumber)) {
+                if (!/^255[0-9]{9}$/.test(phoneNumber)) {
                     showAlert(
-                        "Invalid phone number format. Use 254xxxxxxxxx",
+                        "Invalid phone number format. Use 255xxxxxxxxx",
                         "error",
                     );
                     return;
                 }
 
-                processMPesa(phoneNumber, price, duration, dataLimit, email);
+                processTigoPesa(phoneNumber, price, duration, dataLimit, email);
+            };
+
+            // Process Airtel Money payment
+            window.processAirtelMoneyPayment = function (
+                planId,
+                price,
+                duration,
+                dataLimit,
+                email,
+            ) {
+                closePaymentModal();
+
+                const phoneNumber = prompt(
+                    "Enter your Airtel Money phone number (format: 255xxxxxxxxx):",
+                );
+                if (!phoneNumber) return;
+
+                // Validate phone number
+                if (!/^255[0-9]{9}$/.test(phoneNumber)) {
+                    showAlert(
+                        "Invalid phone number format. Use 255xxxxxxxxx",
+                        "error",
+                    );
+                    return;
+                }
+
+                processAirtelMoney(phoneNumber, price, duration, dataLimit, email);
             };
 
             // Process dummy payment
@@ -774,15 +808,15 @@
                 modals.forEach((modal) => modal.remove());
             };
 
-            // M-Pesa payment processing
-            async function processMPesa(
+            // Tigo Pesa payment processing
+            async function processTigoPesa(
                 phoneNumber,
                 amount,
                 duration,
                 dataLimit,
                 email,
             ) {
-                showAlert("Initiating M-Pesa payment...", "success");
+                showAlert("Initiating Tigo Pesa payment...", "success");
 
                 try {
                     const paymentRef =
@@ -790,7 +824,7 @@
                         Math.random().toString(36).substr(2, 8).toUpperCase();
 
                     const response = await fetch(
-                        `${API_BASE}/payment/mpesa/initiate`,
+                        `${API_BASE}/payment/tigopesa/initiate`,
                         {
                             method: "POST",
                             headers: {
@@ -811,25 +845,84 @@
 
                     if (result.success) {
                         showAlert(
-                            "STK push sent! Please check your phone and enter your M-Pesa PIN.",
+                            "Payment request sent! Please check your phone and approve the transaction.",
                             "success",
                         );
 
                         // Start polling for payment status
-                        pollPaymentStatus(result.checkout_request_id);
+                        pollPaymentStatus(result.transaction_id);
                     } else {
                         showAlert(
-                            "Failed to initiate M-Pesa payment: " +
+                            "Failed to initiate Tigo Pesa payment: " +
                                 result.message,
                             "error",
                         );
                     }
                 } catch (error) {
                     showAlert(
-                        "M-Pesa payment error. Please try again.",
+                        "Tigo Pesa payment error. Please try again.",
                         "error",
                     );
-                    console.error("M-Pesa error:", error);
+                    console.error("Tigo Pesa error:", error);
+                }
+            }
+
+            // Airtel Money payment processing
+            async function processAirtelMoney(
+                phoneNumber,
+                amount,
+                duration,
+                dataLimit,
+                email,
+            ) {
+                showAlert("Initiating Airtel Money payment...", "success");
+
+                try {
+                    const paymentRef =
+                        "WIFI_" +
+                        Math.random().toString(36).substr(2, 8).toUpperCase();
+
+                    const response = await fetch(
+                        `${API_BASE}/payment/airtelmoney/initiate`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                phone_number: phoneNumber,
+                                amount: amount,
+                                email: email,
+                                duration: duration,
+                                data_limit: dataLimit,
+                                payment_reference: paymentRef,
+                            }),
+                        },
+                    );
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showAlert(
+                            "Payment request sent! Please check your phone and approve the transaction.",
+                            "success",
+                        );
+
+                        // Start polling for payment status
+                        pollPaymentStatus(result.transaction_id);
+                    } else {
+                        showAlert(
+                            "Failed to initiate Airtel Money payment: " +
+                                result.message,
+                            "error",
+                        );
+                    }
+                } catch (error) {
+                    showAlert(
+                        "Airtel Money payment error. Please try again.",
+                        "error",
+                    );
+                    console.error("Airtel Money error:", error);
                 }
             }
 
@@ -889,8 +982,8 @@
                 }
             }
 
-            // Poll payment status for M-Pesa
-            function pollPaymentStatus(checkoutRequestId) {
+            // Poll payment status
+            function pollPaymentStatus(transactionId) {
                 let attempts = 0;
                 const maxAttempts = 12; // 2 minutes max
 
