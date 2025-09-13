@@ -442,6 +442,10 @@
         <script>
             const API_BASE = window.location.origin;
 
+            // Get URL parameters including client_mac
+            const urlParams = new URLSearchParams(window.location.search);
+            const clientMac = urlParams.get('client_mac');
+
             // Login form submission
             document
                 .getElementById("loginForm")
@@ -474,6 +478,7 @@
                             body: JSON.stringify({
                                 email: email,
                                 voucher_code: voucher_code,
+                                client_mac: clientMac, // Add this line
                             }),
                         });
 

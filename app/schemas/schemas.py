@@ -89,6 +89,7 @@ class PaymentResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     voucher_code: str
+    client_mac: Optional[str] = None
 
 class LoginResponse(BaseModel):
     success: bool

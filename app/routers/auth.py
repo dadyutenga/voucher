@@ -53,11 +53,16 @@ def get_client_mac_from_request(request: Request):
     # If not found, return None
     return None
 @router.post("/login", response_model=schemas.LoginResponse)
-def login_with_voucher(login_data: schemas.LoginRequest, db: Session = Depends(get_db)):
+def login_with_voucher(login_data: schemas.LoginRequest, request: Request, db: Session = Depends(get_db)):
     """
     Validate voucher and email, then redirect to grant URL if valid.
     This endpoint is called from the Meraki splash page.
     """
+    # Get client_mac from login data or request parameters
+    client_mac = login_data.client_mac or request.query_params.get('client_mac')
+    
+    logger.info(f"🔍 PRODUCTION: Login request - Email: {login_data.email}, MAC: {client_mac}")
+    
     # Find the account by email
     account = db.query(models.Account).filter(models.Account.email == login_data.email).first()
     if not account:
@@ -104,8 +109,14 @@ def login_with_voucher(login_data: schemas.LoginRequest, db: Session = Depends(g
         voucher.expires_at = expires_at
         db.commit()
 
-    # Return success with redirect to grant endpoint
-    grant_url = f"/auth/grant?email={login_data.email}&voucher_code={login_data.voucher_code}"
+    # CRITICAL FIX: Include client_mac in the grant URL if available
+    if client_mac:
+        grant_url = f"/auth/grant?email={login_data.email}&voucher_code={login_data.voucher_code}&client_mac={client_mac}"
+        logger.info(f"🔗 PRODUCTION: Grant URL with MAC: {grant_url}")
+    else:
+        # For production, we should have the MAC - log this as an issue
+        grant_url = f"/auth/grant?email={login_data.email}&voucher_code={login_data.voucher_code}"
+        logger.error("❌ PRODUCTION: No client_mac available - this will likely fail at grant step")
 
     return schemas.LoginResponse(
         success=True,
