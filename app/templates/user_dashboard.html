@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wi-Fi Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .nav { 
+            background: #f8f9fa; 
+            padding: 0; 
+            display: flex; 
+            border-bottom: 1px solid #dee2e6;
+        }
+        .nav-item { 
+            flex: 1; 
+            text-align: center; 
+            padding: 15px; 
+            cursor: pointer; 
+            transition: all 0.3s;
+            background: white;
+            border: none;
+            font-size: 16px;
+        }
+        .nav-item:hover { background: #e9ecef; }
+        .nav-item.active { 
+            background: #667eea; 
+            color: white; 
+            font-weight: 600;
+        }
+        .content { 
+            padding: 30px; 
+            min-height: 400px;
+        }
+        .dashboard-section { display: none; }
+        .dashboard-section.active { display: block; }
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+        .stat-card { 
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+            color: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 { font-size: 2.2em; margin-bottom: 8px; }
+        .stat-card p { opacity: 0.9; font-size: 1.1em; }
+        .voucher-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 20px; 
+        }
+        .voucher-card { 
+            background: #f8f9fa; 
+            border: 2px solid #dee2e6; 
+            border-radius: 12px; 
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        .voucher-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .voucher-header { 
+            display: flex; 
+            justify-content: between; 
+            align-items: center; 
+            margin-bottom: 15px; 
+        }
+        .voucher-code { 
+            font-size: 1.3em; 
+            font-weight: 700; 
+            color: #667eea; 
+            font-family: 'Courier New', monospace;
+        }
+        .status-badge { 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 0.85em; 
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-used { background: #d1ecf1; color: #0c5460; }
+        .status-expired { background: #f8d7da; color: #721c24; }
+        .voucher-details p { 
+            margin: 8px 0; 
+            color: #666; 
+        }
+        .voucher-details strong { color: #333; }
+        .btn { 
+            padding: 12px 25px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            text-decoration: none; 
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-secondary { 
+            background: #6c757d; 
+            color: white; 
+        }
+        .transaction-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        .transaction-table th, .transaction-table td { 
+            padding: 15px; 
+            text-align: left; 
+            border-bottom: 1px solid #dee2e6; 
+        }
+        .transaction-table th { 
+            background: #f8f9fa; 
+            font-weight: 600;
+            color: #495057;
+        }
+        .empty-state { 
+            text-align: center; 
+            padding: 60px 20px; 
+            color: #6c757d; 
+        }
+        .empty-state h3 { 
+            margin-bottom: 15px; 
+            color: #495057;
+        }
+        .account-info { 
+            background: #f8f9fa; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+        }
+        .account-info h3 { 
+            color: #667eea; 
+            margin-bottom: 15px; 
+        }
+        .info-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 10px 0; 
+            padding: 8px 0; 
+            border-bottom: 1px solid #e9ecef; 
+        }
+        .logout-btn { 
+            position: absolute; 
+            top: 20px; 
+            right: 20px; 
+            background: rgba(255,255,255,0.2); 
+            color: white; 
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .logout-btn:hover { 
+            background: rgba(255,255,255,0.3); 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="logout-btn" onclick="logout()">Logout</button>
+            <h1>🌐 Wi-Fi Dashboard</h1>
+            <p>Welcome back! Manage your vouchers and view your usage history.</p>
+        </div>
+
+        <div class="nav">
+            <button class="nav-item active" onclick="showSection('overview')">📊 Overview</button>
+            <button class="nav-item" onclick="showSection('vouchers')">🎫 My Vouchers</button>
+            <button class="nav-item" onclick="showSection('transactions')">💳 Transactions</button>
+            <button class="nav-item" onclick="showSection('account')">👤 Account</button>
+        </div>
+
+        <div class="content">
+            <!-- Overview Section -->
+            <div id="overview" class="dashboard-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="total-vouchers">-</h3>
+                        <p>Total Vouchers</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="active-vouchers">-</h3>
+                        <p>Active Vouchers</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="total-spent">-</h3>
+                        <p>Total Spent (KES)</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 20px; color: #495057;">📈 Quick Actions</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <a href="#" class="btn btn-primary" onclick="buyNewVoucher()">💰 Buy New Voucher</a>
+                    <a href="#" class="btn btn-secondary" onclick="showSection('vouchers')">🎫 View All Vouchers</a>
+                    <a href="#" class="btn btn-secondary" onclick="showSection('transactions')">📊 Transaction History</a>
+                </div>
+            </div>
+
+            <!-- Vouchers Section -->
+            <div id="vouchers" class="dashboard-section">
+                <h3 style="margin-bottom: 20px; color: #495057;">🎫 My Vouchers</h3>
+                <div id="vouchers-container" class="voucher-grid">
+                    <!-- Vouchers will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Transactions Section -->
+            <div id="transactions" class="dashboard-section">
+                <h3 style="margin-bottom: 20px; color: #495057;">💳 Transaction History</h3>
+                <div id="transactions-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>Voucher</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-tbody">
+                            <!-- Transactions will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Account Section -->
+            <div id="account" class="dashboard-section">
+                <div class="account-info">
+                    <h3>👤 Account Information</h3>
+                    <div class="info-row">
+                        <strong>Mobile Number:</strong>
+                        <span id="user-mobile">-</span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Account Created:</strong>
+                        <span id="user-created">-</span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Last Login:</strong>
+                        <span id="user-last-login">-</span>
+                    </div>
+                    <div class="info-row">
+                        <strong>Account Status:</strong>
+                        <span id="user-status">-</span>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 20px; color: #495057;">🔧 Account Actions</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="changePassword()">🔐 Change Password</button>
+                    <button class="btn btn-secondary" onclick="downloadData()">📥 Download My Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userData = null;
+
+        // Function to show different sections
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.dashboard-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.add('active');
+            
+            // Add active class to clicked nav item
+            event.target.classList.add('active');
+        }
+
+        // Load user dashboard data
+        async function loadDashboard() {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                const response = await fetch('/auth/dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    userData = await response.json();
+                    updateDashboard();
+                } else {
+                    console.error('Failed to load dashboard data');
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Update dashboard with user data
+        function updateDashboard() {
+            if (!userData) return;
+
+            // Update stats
+            document.getElementById('total-vouchers').textContent = userData.vouchers.length;
+            document.getElementById('active-vouchers').textContent = 
+                userData.vouchers.filter(v => v.status === 'active').length;
+            
+            const totalSpent = userData.transactions
+                .filter(t => t.status === 'completed')
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+            document.getElementById('total-spent').textContent = totalSpent.toFixed(0);
+
+            // Update account info
+            document.getElementById('user-mobile').textContent = userData.account.mobile_number;
+            document.getElementById('user-created').textContent = 
+                new Date(userData.account.created_at).toLocaleDateString();
+            document.getElementById('user-last-login').textContent = 
+                userData.account.last_login ? 
+                new Date(userData.account.last_login).toLocaleDateString() : 'Never';
+            document.getElementById('user-status').textContent = 
+                userData.account.is_active ? 'Active' : 'Inactive';
+
+            // Load vouchers
+            loadVouchers();
+            
+            // Load transactions
+            loadTransactions();
+        }
+
+        // Load vouchers
+        function loadVouchers() {
+            const container = document.getElementById('vouchers-container');
+            
+            if (userData.vouchers.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No vouchers yet</h3>
+                        <p>You haven't purchased any vouchers yet. Get started by buying your first voucher!</p>
+                        <button class="btn btn-primary" onclick="buyNewVoucher()">Buy First Voucher</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = userData.vouchers.map(voucher => `
+                <div class="voucher-card">
+                    <div class="voucher-header">
+                        <div class="voucher-code">${voucher.code}</div>
+                        <div class="status-badge status-${voucher.status}">${voucher.status}</div>
+                    </div>
+                    <div class="voucher-details">
+                        <p><strong>Duration:</strong> ${voucher.duration} minutes</p>
+                        <p><strong>Data Limit:</strong> ${voucher.data_limit ? voucher.data_limit + ' MB' : 'Unlimited'}</p>
+                        <p><strong>Created:</strong> ${new Date(voucher.created_at).toLocaleDateString()}</p>
+                        ${voucher.expires_at ? `<p><strong>Expires:</strong> ${new Date(voucher.expires_at).toLocaleDateString()}</p>` : ''}
+                        ${voucher.used_at ? `<p><strong>Used:</strong> ${new Date(voucher.used_at).toLocaleDateString()}</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load transactions
+        function loadTransactions() {
+            const tbody = document.getElementById('transactions-tbody');
+            
+            if (userData.transactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px; color: #6c757d;">
+                            No transactions found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = userData.transactions.map(transaction => `
+                <tr>
+                    <td>${new Date(transaction.created_at).toLocaleDateString()}</td>
+                    <td>KES ${parseFloat(transaction.amount).toFixed(0)}</td>
+                    <td>${transaction.payment_method.toUpperCase()}</td>
+                    <td>
+                        <span class="status-badge status-${transaction.status}">${transaction.status}</span>
+                    </td>
+                    <td>${transaction.voucher_id || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Buy new voucher
+        function buyNewVoucher() {
+            window.location.href = '/#plans';
+        }
+
+        // Change password
+        function changePassword() {
+            const newPassword = prompt('Enter new password (minimum 6 characters):');
+            if (newPassword && newPassword.length >= 6) {
+                // TODO: Implement password change API call
+                alert('Password change functionality will be implemented soon.');
+            } else if (newPassword !== null) {
+                alert('Password must be at least 6 characters long.');
+            }
+        }
+
+        // Download user data
+        function downloadData() {
+            const dataStr = JSON.stringify(userData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'my-wifi-data.json';
+            link.click();
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/';
+        }
+
+        // Load dashboard when page loads
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>

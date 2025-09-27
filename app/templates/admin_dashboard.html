@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Wi-Fi Voucher System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+        .admin-container { 
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar { 
+            width: 280px; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding: 20px 0;
+        }
+        .sidebar-header { 
+            padding: 0 20px 20px; 
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        .sidebar-header h2 { 
+            color: #1e3c72; 
+            font-size: 1.5em; 
+        }
+        .sidebar-header p { 
+            color: #6c757d; 
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .sidebar-nav { 
+            list-style: none; 
+        }
+        .sidebar-nav li { 
+            margin: 5px 0; 
+        }
+        .sidebar-nav a { 
+            display: block; 
+            padding: 12px 20px; 
+            color: #495057; 
+            text-decoration: none; 
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-nav a:hover, .sidebar-nav a.active { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            border-left-color: white;
+        }
+        .main-content { 
+            flex: 1; 
+            padding: 30px;
+            overflow-y: auto;
+        }
+        .header { 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px);
+            border-radius: 12px; 
+            padding: 20px 30px; 
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { 
+            color: #1e3c72; 
+            font-size: 2em;
+        }
+        .header-actions { 
+            display: flex; 
+            gap: 15px; 
+        }
+        .btn { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            text-decoration: none; 
+            display: inline-block;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); 
+            color: white; 
+        }
+        .btn-success { 
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); 
+            color: white; 
+        }
+        .btn-secondary { 
+            background: #6c757d; 
+            color: white; 
+        }
+        .content-section { 
+            display: none;
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px);
+            border-radius: 12px; 
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .content-section.active { 
+            display: block; 
+        }
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+        .stat-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .stat-card.danger { 
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); 
+        }
+        .stat-card.success { 
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%); 
+        }
+        .stat-card.warning { 
+            background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); 
+        }
+        .stat-card h3 { 
+            font-size: 2.5em; 
+            margin-bottom: 8px; 
+        }
+        .stat-card p { 
+            opacity: 0.9; 
+            font-size: 1.1em; 
+        }
+        .data-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .data-table th, .data-table td { 
+            padding: 15px 20px; 
+            text-align: left; 
+            border-bottom: 1px solid #dee2e6; 
+        }
+        .data-table th { 
+            background: #f8f9fa; 
+            font-weight: 600;
+            color: #495057;
+            position: sticky;
+            top: 0;
+        }
+        .data-table tbody tr:hover { 
+            background: #f8f9fa; 
+        }
+        .status-badge { 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-size: 0.8em; 
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-active { background: #d4edda; color: #155724; }
+        .status-used { background: #d1ecf1; color: #0c5460; }
+        .status-expired { background: #f8d7da; color: #721c24; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        .search-bar { 
+            margin-bottom: 20px; 
+            display: flex; 
+            gap: 15px; 
+            align-items: center;
+        }
+        .search-bar input { 
+            flex: 1; 
+            padding: 12px 15px; 
+            border: 1px solid #dee2e6; 
+            border-radius: 8px; 
+            font-size: 16px;
+        }
+        .filters { 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+        }
+        .filter-select { 
+            padding: 8px 12px; 
+            border: 1px solid #dee2e6; 
+            border-radius: 6px; 
+            font-size: 14px;
+        }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content { 
+            background: white; 
+            margin: 5% auto; 
+            padding: 30px; 
+            border-radius: 12px; 
+            width: 90%; 
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .close { 
+            color: #aaa; 
+            float: right; 
+            font-size: 28px; 
+            font-weight: bold; 
+            cursor: pointer;
+        }
+        .close:hover { color: #000; }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: 600;
+            color: #495057;
+        }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; 
+            padding: 10px 15px; 
+            border: 1px solid #dee2e6; 
+            border-radius: 6px; 
+            font-size: 16px;
+        }
+        .form-group textarea { 
+            height: 100px; 
+            resize: vertical; 
+        }
+        .loading { 
+            text-align: center; 
+            padding: 40px; 
+            color: #6c757d; 
+        }
+        .empty-state { 
+            text-align: center; 
+            padding: 60px 20px; 
+            color: #6c757d; 
+        }
+        .empty-state h3 { 
+            margin-bottom: 15px; 
+            color: #495057;
+        }
+        .action-buttons { 
+            display: flex; 
+            gap: 5px; 
+        }
+        .btn-sm { 
+            padding: 5px 10px; 
+            font-size: 12px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🔧 Admin Panel</h2>
+                <p>Wi-Fi Voucher System</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="#" onclick="showSection('dashboard')" class="active">📊 Dashboard</a></li>
+                <li><a href="#" onclick="showSection('users')">👥 Users</a></li>
+                <li><a href="#" onclick="showSection('vouchers')">🎫 Vouchers</a></li>
+                <li><a href="#" onclick="showSection('transactions')">💳 Transactions</a></li>
+                <li><a href="#" onclick="showSection('analytics')">📈 Analytics</a></li>
+                <li><a href="#" onclick="showSection('settings')">⚙️ Settings</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1 id="section-title">📊 Dashboard Overview</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
+                    <button class="btn btn-secondary" onclick="exportData()">📥 Export</button>
+                    <button class="btn btn-danger" onclick="adminLogout()">🚪 Logout</button>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="total-users">-</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-card success">
+                        <h3 id="active-vouchers">-</h3>
+                        <p>Active Vouchers</p>
+                    </div>
+                    <div class="stat-card warning">
+                        <h3 id="total-revenue">-</h3>
+                        <p>Total Revenue (KES)</p>
+                    </div>
+                    <div class="stat-card danger">
+                        <h3 id="pending-transactions">-</h3>
+                        <p>Pending Transactions</p>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 20px; color: #495057;">🚀 Quick Actions</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px;">
+                    <button class="btn btn-primary" onclick="openCreateUserModal()">👤 Create User</button>
+                    <button class="btn btn-success" onclick="openCreateVoucherModal()">🎫 Create Voucher</button>
+                    <button class="btn btn-secondary" onclick="showSection('analytics')">📊 View Analytics</button>
+                </div>
+
+                <h3 style="margin-bottom: 20px; color: #495057;">📈 Recent Activity</h3>
+                <div id="recent-activity" class="loading">Loading recent activity...</div>
+            </div>
+
+            <!-- Users Section -->
+            <div id="users" class="content-section">
+                <div class="search-bar">
+                    <input type="text" id="users-search" placeholder="Search users by mobile number..." oninput="filterUsers()">
+                    <button class="btn btn-primary" onclick="openCreateUserModal()">👤 Add User</button>
+                </div>
+
+                <div class="filters">
+                    <select id="users-status-filter" class="filter-select" onchange="filterUsers()">
+                        <option value="">All Status</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mobile Number</th>
+                            <th>Created</th>
+                            <th>Last Login</th>
+                            <th>Status</th>
+                            <th>Vouchers</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="6" class="loading">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Vouchers Section -->
+            <div id="vouchers" class="content-section">
+                <div class="search-bar">
+                    <input type="text" id="vouchers-search" placeholder="Search vouchers by code..." oninput="filterVouchers()">
+                    <button class="btn btn-success" onclick="openCreateVoucherModal()">🎫 Create Voucher</button>
+                </div>
+
+                <div class="filters">
+                    <select id="vouchers-status-filter" class="filter-select" onchange="filterVouchers()">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="used">Used</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Mobile Number</th>
+                            <th>Duration</th>
+                            <th>Data Limit</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vouchers-tbody">
+                        <tr><td colspan="7" class="loading">Loading vouchers...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Transactions Section -->
+            <div id="transactions" class="content-section">
+                <div class="search-bar">
+                    <input type="text" id="transactions-search" placeholder="Search transactions..." oninput="filterTransactions()">
+                </div>
+
+                <div class="filters">
+                    <select id="transactions-status-filter" class="filter-select" onchange="filterTransactions()">
+                        <option value="">All Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <select id="transactions-method-filter" class="filter-select" onchange="filterTransactions()">
+                        <option value="">All Methods</option>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="dummy">Test</option>
+                        <option value="demo">Demo</option>
+                    </select>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Mobile Number</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-tbody">
+                        <tr><td colspan="7" class="loading">Loading transactions...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics" class="content-section">
+                <h3 style="margin-bottom: 30px; color: #495057;">📊 System Analytics</h3>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="analytics-daily-revenue">-</h3>
+                        <p>Today's Revenue</p>
+                    </div>
+                    <div class="stat-card success">
+                        <h3 id="analytics-weekly-users">-</h3>
+                        <p>New Users This Week</p>
+                    </div>
+                    <div class="stat-card warning">
+                        <h3 id="analytics-conversion-rate">-</h3>
+                        <p>Conversion Rate</p>
+                    </div>
+                    <div class="stat-card danger">
+                        <h3 id="analytics-churn-rate">-</h3>
+                        <p>Churn Rate</p>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 30px;">
+                    <h4 style="margin-bottom: 15px;">📈 Charts and Graphs</h4>
+                    <p style="color: #6c757d;">Advanced analytics charts will be implemented here. This could include:</p>
+                    <ul style="margin: 10px 0; padding-left: 20px; color: #6c757d;">
+                        <li>Revenue trends over time</li>
+                        <li>User acquisition patterns</li>
+                        <li>Voucher usage statistics</li>
+                        <li>Payment method preferences</li>
+                        <li>Peak usage hours</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings" class="content-section">
+                <h3 style="margin-bottom: 30px; color: #495057;">⚙️ System Settings</h3>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h4 style="margin-bottom: 15px;">🔧 Configuration Options</h4>
+                    <p style="color: #6c757d; margin-bottom: 20px;">System configuration will be implemented here. This could include:</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <div style="background: white; padding: 20px; border-radius: 8px;">
+                            <h5 style="color: #495057; margin-bottom: 10px;">💰 Pricing Settings</h5>
+                            <ul style="color: #6c757d; font-size: 14px;">
+                                <li>Voucher plan prices</li>
+                                <li>Currency settings</li>
+                                <li>Discount codes</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background: white; padding: 20px; border-radius: 8px;">
+                            <h5 style="color: #495057; margin-bottom: 10px;">📧 Notification Settings</h5>
+                            <ul style="color: #6c757d; font-size: 14px;">
+                                <li>SMS notifications</li>
+                                <li>Email templates</li>
+                                <li>Admin alerts</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background: white; padding: 20px; border-radius: 8px;">
+                            <h5 style="color: #495057; margin-bottom: 10px;">🔒 Security Settings</h5>
+                            <ul style="color: #6c757d; font-size: 14px;">
+                                <li>Password policies</li>
+                                <li>Session timeouts</li>
+                                <li>Rate limiting</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background: white; padding: 20px; border-radius: 8px;">
+                            <h5 style="color: #495057; margin-bottom: 10px;">🌐 Network Settings</h5>
+                            <ul style="color: #6c757d; font-size: 14px;">
+                                <li>Meraki API configuration</li>
+                                <li>Network timeouts</li>
+                                <li>Captive portal settings</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createUserModal')">&times;</span>
+            <h2>👤 Create New User</h2>
+            <form id="createUserForm">
+                <div class="form-group">
+                    <label for="mobile_number">Mobile Number (Tanzanian)</label>
+                    <input type="tel" id="mobile_number" name="mobile_number" placeholder="+255712345678" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Minimum 6 characters" required>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createUserModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Voucher Modal -->
+    <div id="createVoucherModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createVoucherModal')">&times;</span>
+            <h2>🎫 Create New Voucher</h2>
+            <form id="createVoucherForm">
+                <div class="form-group">
+                    <label for="voucher_mobile_number">Mobile Number</label>
+                    <input type="tel" id="voucher_mobile_number" name="mobile_number" placeholder="+255712345678" required>
+                </div>
+                <div class="form-group">
+                    <label for="duration">Duration (minutes)</label>
+                    <input type="number" id="duration" name="duration" placeholder="60" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_limit">Data Limit (MB) - Optional</label>
+                    <input type="number" id="data_limit" name="data_limit" placeholder="1024">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createVoucherModal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Voucher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let adminData = {
+            users: [],
+            vouchers: [],
+            transactions: [],
+            stats: {}
+        };
+
+        // Show section
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.sidebar-nav a').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.add('active');
+            
+            // Add active class to clicked nav item
+            event.target.classList.add('active');
+            
+            // Update header title
+            const titles = {
+                'dashboard': '📊 Dashboard Overview',
+                'users': '👥 User Management',
+                'vouchers': '🎫 Voucher Management',
+                'transactions': '💳 Transaction History',
+                'analytics': '📈 Analytics & Reports',
+                'settings': '⚙️ System Settings'
+            };
+            document.getElementById('section-title').textContent = titles[sectionName] || sectionName;
+            
+            // Load section data
+            loadSectionData(sectionName);
+        }
+
+        // Load section data
+        function loadSectionData(section) {
+            switch(section) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'users':
+                    loadUsersData();
+                    break;
+                case 'vouchers':
+                    loadVouchersData();
+                    break;
+                case 'transactions':
+                    loadTransactionsData();
+                    break;
+                case 'analytics':
+                    loadAnalyticsData();
+                    break;
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Simulate API calls - replace with actual endpoints
+                const statsResponse = await fetch('/admin/stats');
+                const recentResponse = await fetch('/admin/recent-activity');
+                
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    updateDashboardStats(stats);
+                }
+                
+                if (recentResponse.ok) {
+                    const recent = await recentResponse.json();
+                    updateRecentActivity(recent);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                // Simulate some data for demo
+                updateDashboardStats({
+                    total_users: 150,
+                    active_vouchers: 45,
+                    total_revenue: 15750,
+                    pending_transactions: 3
+                });
+                updateRecentActivity([]);
+            }
+        }
+
+        // Update dashboard stats
+        function updateDashboardStats(stats) {
+            document.getElementById('total-users').textContent = stats.total_users || 0;
+            document.getElementById('active-vouchers').textContent = stats.active_vouchers || 0;
+            document.getElementById('total-revenue').textContent = (stats.total_revenue || 0).toLocaleString();
+            document.getElementById('pending-transactions').textContent = stats.pending_transactions || 0;
+        }
+
+        // Update recent activity
+        function updateRecentActivity(activities) {
+            const container = document.getElementById('recent-activity');
+            if (activities.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No recent activity</h3><p>System activity will appear here as it happens.</p></div>';
+                return;
+            }
+            
+            // Display recent activities
+            container.innerHTML = activities.map(activity => `
+                <div style="padding: 10px; background: #f8f9fa; margin-bottom: 10px; border-radius: 6px;">
+                    <strong>${activity.type}</strong>: ${activity.description}
+                    <small style="float: right; color: #6c757d;">${new Date(activity.timestamp).toLocaleString()}</small>
+                </div>
+            `).join('');
+        }
+
+        // Load users data
+        async function loadUsersData() {
+            const tbody = document.getElementById('users-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading users...</td></tr>';
+            
+            try {
+                const response = await fetch('/admin/users');
+                if (response.ok) {
+                    adminData.users = await response.json();
+                    displayUsers(adminData.users);
+                } else {
+                    throw new Error('Failed to load users');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #dc3545;">Error loading users</td></tr>';
+            }
+        }
+
+        // Display users
+        function displayUsers(users) {
+            const tbody = document.getElementById('users-tbody');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.mobile_number}</td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
+                    <td><span class="status-badge ${user.is_active ? 'status-active' : 'status-expired'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${user.voucher_count || 0}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="viewUser('${user.id}')">View</button>
+                            <button class="btn btn-sm btn-secondary" onclick="editUser('${user.id}')">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Load vouchers data
+        async function loadVouchersData() {
+            const tbody = document.getElementById('vouchers-tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading vouchers...</td></tr>';
+            
+            try {
+                const response = await fetch('/admin/vouchers');
+                if (response.ok) {
+                    adminData.vouchers = await response.json();
+                    displayVouchers(adminData.vouchers);
+                } else {
+                    throw new Error('Failed to load vouchers');
+                }
+            } catch (error) {
+                console.error('Error loading vouchers:', error);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #dc3545;">Error loading vouchers</td></tr>';
+            }
+        }
+
+        // Display vouchers
+        function displayVouchers(vouchers) {
+            const tbody = document.getElementById('vouchers-tbody');
+            
+            if (vouchers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No vouchers found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = vouchers.map(voucher => `
+                <tr>
+                    <td style="font-family: monospace; font-weight: bold;">${voucher.code}</td>
+                    <td>${voucher.mobile_number || '-'}</td>
+                    <td>${voucher.duration} min</td>
+                    <td>${voucher.data_limit ? voucher.data_limit + ' MB' : 'Unlimited'}</td>
+                    <td><span class="status-badge status-${voucher.status}">${voucher.status}</span></td>
+                    <td>${new Date(voucher.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="viewVoucher('${voucher.id}')">View</button>
+                            <button class="btn btn-sm btn-danger" onclick="expireVoucher('${voucher.id}')">Expire</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Load transactions data
+        async function loadTransactionsData() {
+            const tbody = document.getElementById('transactions-tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading transactions...</td></tr>';
+            
+            try {
+                const response = await fetch('/admin/transactions');
+                if (response.ok) {
+                    adminData.transactions = await response.json();
+                    displayTransactions(adminData.transactions);
+                } else {
+                    throw new Error('Failed to load transactions');
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #dc3545;">Error loading transactions</td></tr>';
+            }
+        }
+
+        // Display transactions
+        function displayTransactions(transactions) {
+            const tbody = document.getElementById('transactions-tbody');
+            
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No transactions found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = transactions.map(transaction => `
+                <tr>
+                    <td style="font-family: monospace;">${transaction.id.substring(0, 8)}...</td>
+                    <td>${transaction.mobile_number || '-'}</td>
+                    <td>KES ${parseFloat(transaction.amount).toFixed(0)}</td>
+                    <td>${transaction.payment_method.toUpperCase()}</td>
+                    <td><span class="status-badge status-${transaction.status}">${transaction.status}</span></td>
+                    <td>${new Date(transaction.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="viewTransaction('${transaction.id}')">View</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Load analytics data
+        function loadAnalyticsData() {
+            // Simulate analytics data
+            document.getElementById('analytics-daily-revenue').textContent = '5,200';
+            document.getElementById('analytics-weekly-users').textContent = '23';
+            document.getElementById('analytics-conversion-rate').textContent = '12.5%';
+            document.getElementById('analytics-churn-rate').textContent = '3.2%';
+        }
+
+        // Filter functions
+        function filterUsers() {
+            const searchTerm = document.getElementById('users-search').value.toLowerCase();
+            const statusFilter = document.getElementById('users-status-filter').value;
+            
+            let filtered = adminData.users;
+            
+            if (searchTerm) {
+                filtered = filtered.filter(user => 
+                    user.mobile_number.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (statusFilter !== '') {
+                filtered = filtered.filter(user => 
+                    user.is_active.toString() === statusFilter
+                );
+            }
+            
+            displayUsers(filtered);
+        }
+
+        function filterVouchers() {
+            const searchTerm = document.getElementById('vouchers-search').value.toLowerCase();
+            const statusFilter = document.getElementById('vouchers-status-filter').value;
+            
+            let filtered = adminData.vouchers;
+            
+            if (searchTerm) {
+                filtered = filtered.filter(voucher => 
+                    voucher.code.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (statusFilter) {
+                filtered = filtered.filter(voucher => 
+                    voucher.status === statusFilter
+                );
+            }
+            
+            displayVouchers(filtered);
+        }
+
+        function filterTransactions() {
+            const searchTerm = document.getElementById('transactions-search').value.toLowerCase();
+            const statusFilter = document.getElementById('transactions-status-filter').value;
+            const methodFilter = document.getElementById('transactions-method-filter').value;
+            
+            let filtered = adminData.transactions;
+            
+            if (searchTerm) {
+                filtered = filtered.filter(transaction => 
+                    transaction.id.toLowerCase().includes(searchTerm) ||
+                    (transaction.mobile_number && transaction.mobile_number.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            if (statusFilter) {
+                filtered = filtered.filter(transaction => 
+                    transaction.status === statusFilter
+                );
+            }
+            
+            if (methodFilter) {
+                filtered = filtered.filter(transaction => 
+                    transaction.payment_method === methodFilter
+                );
+            }
+            
+            displayTransactions(filtered);
+        }
+
+        // Modal functions
+        function openCreateUserModal() {
+            document.getElementById('createUserModal').style.display = 'block';
+        }
+
+        function openCreateVoucherModal() {
+            document.getElementById('createVoucherModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Action functions
+        function viewUser(userId) {
+            alert('View user functionality will be implemented');
+        }
+
+        function editUser(userId) {
+            alert('Edit user functionality will be implemented');
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                alert('Delete user functionality will be implemented');
+            }
+        }
+
+        function viewVoucher(voucherId) {
+            alert('View voucher functionality will be implemented');
+        }
+
+        function expireVoucher(voucherId) {
+            if (confirm('Are you sure you want to expire this voucher?')) {
+                alert('Expire voucher functionality will be implemented');
+            }
+        }
+
+        function viewTransaction(transactionId) {
+            alert('View transaction functionality will be implemented');
+        }
+
+        // Utility functions
+        function refreshData() {
+            location.reload();
+        }
+
+        function exportData() {
+            alert('Export functionality will be implemented');
+        }
+
+        function adminLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('admin_token');
+                window.location.href = '/admin/login';
+            }
+        }
+
+        // Form submissions
+        document.getElementById('createUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const userData = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/admin/users', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(userData)
+                });
+                
+                if (response.ok) {
+                    alert('User created successfully!');
+                    closeModal('createUserModal');
+                    loadUsersData();
+                } else {
+                    alert('Failed to create user');
+                }
+            } catch (error) {
+                alert('Error creating user');
+            }
+        });
+
+        document.getElementById('createVoucherForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const voucherData = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/admin/vouchers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(voucherData)
+                });
+                
+                if (response.ok) {
+                    alert('Voucher created successfully!');
+                    closeModal('createVoucherModal');
+                    loadVouchersData();
+                } else {
+                    alert('Failed to create voucher');
+                }
+            } catch (error) {
+                alert('Error creating voucher');
+            }
+        });
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialize admin dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check admin authentication
+            const adminToken = localStorage.getItem('admin_token');
+            if (!adminToken) {
+                window.location.href = '/admin/login';
+                return;
+            }
+            
+            // Load initial dashboard data
+            loadDashboardData();
+        });
+    </script>
+</body>
+</html>

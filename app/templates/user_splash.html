@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Access - Enter Voucher Code</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .splash-container { 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px);
+            border-radius: 20px; 
+            padding: 50px; 
+            width: 100%; 
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .wifi-icon { 
+            font-size: 4em; 
+            margin-bottom: 20px; 
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .title { 
+            color: #333; 
+            font-size: 2.2em; 
+            margin-bottom: 15px; 
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .voucher-info {
+            background: linear-gradient(135deg, #e8f4fd 0%, #d1ecf1 100%);
+            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .voucher-info h3 {
+            color: #0c5460;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .voucher-info p {
+            color: #555;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .form-group { 
+            margin-bottom: 25px; 
+            text-align: left;
+        }
+        
+        .form-group label { 
+            display: block; 
+            margin-bottom: 10px; 
+            color: #555; 
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .voucher-input { 
+            width: 100%; 
+            padding: 20px 25px; 
+            border: 3px solid #e9ecef; 
+            border-radius: 12px; 
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .voucher-input:focus { 
+            outline: none; 
+            border-color: #667eea; 
+            box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .voucher-input::placeholder {
+            color: #adb5bd;
+            letter-spacing: 1px;
+        }
+        
+        .connect-btn { 
+            width: 100%; 
+            padding: 18px 30px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 18px; 
+            font-weight: 700; 
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .connect-btn:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 15px 30px rgba(102,126,234,0.3);
+        }
+        
+        .connect-btn:disabled { 
+            background: #6c757d; 
+            cursor: not-allowed; 
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .alert { 
+            padding: 15px 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .alert-success { 
+            color: #155724; 
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); 
+            border-left: 4px solid #28a745;
+        }
+        
+        .alert-error { 
+            color: #721c24; 
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); 
+            border-left: 4px solid #dc3545;
+        }
+        
+        .loading { 
+            display: none;
+            width: 25px; 
+            height: 25px; 
+            border: 3px solid rgba(255,255,255,.3); 
+            border-radius: 50%; 
+            border-top-color: #fff; 
+            animation: spin 1s ease-in-out infinite; 
+            margin: 0 auto;
+        }
+        
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+        
+        .help-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .help-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .help-section p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        
+        .help-section a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .help-section a:hover {
+            text-decoration: underline;
+        }
+        
+        .voucher-format {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #856404;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        @media (max-width: 500px) {
+            .splash-container {
+                padding: 30px 25px;
+                max-width: 95%;
+            }
+            
+            .title {
+                font-size: 1.8em;
+            }
+            
+            .voucher-input {
+                padding: 15px 20px;
+                font-size: 16px;
+            }
+            
+            .connect-btn {
+                padding: 15px 25px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator" title="Network Online"></div>
+    
+    <div class="splash-container">
+        <div class="wifi-icon">📶</div>
+        <h1 class="title">Connect to Wi-Fi</h1>
+        <p class="subtitle">Enter your voucher code to access the internet</p>
+        
+        <div class="voucher-info">
+            <h3>🎫 About Voucher Codes</h3>
+            <p>• Voucher codes are 10-character alphanumeric strings</p>
+            <p>• Each voucher is linked to your account</p>
+            <p>• Codes are case-insensitive</p>
+            <p>• Enter the code exactly as provided</p>
+        </div>
+        
+        <div class="voucher-format">
+            Example: ABC123XYZ9
+        </div>
+        
+        <div id="alert" class="alert"></div>
+        
+        <form id="voucherForm">
+            <div class="form-group">
+                <label for="voucher_code">Voucher Code</label>
+                <input 
+                    type="text" 
+                    id="voucher_code" 
+                    name="voucher_code" 
+                    class="voucher-input"
+                    placeholder="Enter 10-character code"
+                    maxlength="10"
+                    minlength="10"
+                    pattern="[A-Za-z0-9]{10}"
+                    required
+                    autocomplete="off"
+                />
+            </div>
+            
+            <button type="submit" class="connect-btn">
+                <span class="btn-text">🚀 Connect Now</span>
+                <div class="loading"></div>
+            </button>
+        </form>
+        
+        <div class="help-section">
+            <h4>💡 Need a Voucher?</h4>
+            <p>Don't have a voucher code? Purchase one from:</p>
+            <p>• <a href="/">Create an account and buy packages</a></p>
+            <p>• Contact customer support</p>
+            <p>• Visit our service desk</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // Get URL parameters including client_mac from captive portal
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientMac = urlParams.get('client_mac');
+        
+        // Auto-format and validate voucher code input
+        document.getElementById('voucher_code').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+            e.target.value = value;
+            
+            // Real-time validation visual feedback
+            if (value.length === 10) {
+                e.target.style.borderColor = '#28a745';
+            } else if (value.length > 0) {
+                e.target.style.borderColor = '#ffc107';
+            } else {
+                e.target.style.borderColor = '#e9ecef';
+            }
+        });
+        
+        // Voucher validation form
+        document.getElementById('voucherForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const voucherCode = document.getElementById('voucher_code').value.trim().toUpperCase();
+            const connectBtn = document.querySelector('.connect-btn');
+            const loading = document.querySelector('.loading');
+            const btnText = document.querySelector('.btn-text');
+            
+            if (!voucherCode || voucherCode.length !== 10) {
+                showAlert('Please enter a valid 10-character voucher code', 'error');
+                return;
+            }
+            
+            // Show loading state
+            connectBtn.disabled = true;
+            btnText.style.display = 'none';
+            loading.style.display = 'block';
+            hideAlert();
+            
+            try {
+                // First, validate the voucher exists and is active
+                const validateResponse = await fetch('/auth/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        voucher_code: voucherCode,
+                        mobile_number: "000000000" // Dummy mobile for validation-only
+                    })
+                });
+                
+                if (!validateResponse.ok) {
+                    const errorData = await validateResponse.json();
+                    throw new Error(errorData.detail || 'Voucher validation failed');
+                }
+                
+                const validationResult = await validateResponse.json();
+                
+                if (!validationResult.valid) {
+                    throw new Error(validationResult.message || 'Invalid voucher code');
+                }
+                
+                // If validation passes, attempt to connect via grant endpoint
+                const grantUrl = `/auth/grant?voucher_code=${voucherCode}${clientMac ? '&client_mac=' + clientMac : ''}`;
+                
+                showAlert('Voucher validated! Connecting to Wi-Fi...', 'success');
+                
+                // Redirect to grant endpoint (this will handle the Meraki connection)
+                setTimeout(() => {
+                    window.location.href = grantUrl;
+                }, 1500);
+                
+            } catch (error) {
+                showAlert(error.message || 'Connection failed. Please check your voucher code and try again.', 'error');
+                console.error('Voucher validation error:', error);
+            } finally {
+                // Reset button state
+                setTimeout(() => {
+                    connectBtn.disabled = false;
+                    btnText.style.display = 'inline';
+                    loading.style.display = 'none';
+                }, 2000);
+            }
+        });
+        
+        // Alert functions
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    hideAlert();
+                }, 5000);
+            }
+        }
+        
+        function hideAlert() {
+            document.getElementById('alert').style.display = 'none';
+        }
+        
+        // Focus on voucher input when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('voucher_code').focus();
+            
+            // Show connection info if client MAC is available
+            if (clientMac) {
+                console.log('Client MAC detected:', clientMac);
+                showAlert('Device detected. Ready to connect!', 'success');
+            }
+        });
+        
+        // Prevent form submission with invalid codes
+        document.getElementById('voucher_code').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.length !== 10) {
+                e.preventDefault();
+                showAlert('Voucher code must be exactly 10 characters', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

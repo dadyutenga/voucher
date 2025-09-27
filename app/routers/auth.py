@@ -1,33 +1,95 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, status
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
+from passlib.context import CryptContext
+from jose import JWTError, jwt
 import requests
 import logging
 import re
+import uuid
 
 from app import schemas
-from app.database import SessionLocal
-from app.models import models
+from app.database import get_db
+from app.models.models import Account, Voucher, Transaction, Package
 from app.core.config import settings
+from app import utils
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="app/templates")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# OAuth2 scheme
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+
+# JWT settings
+SECRET_KEY = getattr(settings, 'SECRET_KEY', "your-secret-key-here")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
 router = APIRouter()
 
-# Dependency
-def get_db():
-    db = SessionLocal()
+# Dependency - get_db will be imported from database.py instead
+# def get_db():
+#     db = SessionLocal()
+#     try:
+#         yield db
+#     finally:
+#         db.close()
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
-        yield db
-    finally:
-        db.close()
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        mobile_number: str = payload.get("sub")
+        if mobile_number is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.query(Account).filter(Account.mobile_number == mobile_number).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
 def utc_now():
     """Get current UTC time with timezone info"""
     return datetime.now(timezone.utc)
+
+def authenticate_user(db: Session, mobile_number: str, password: str):
+    user = db.query(Account).filter(Account.mobile_number == mobile_number).first()
+    if not user:
+        return False
+    if not verify_password(password, user.password_hash):
+        return False
+    return user
 
 def get_client_mac_from_request(request: Request):
     """
@@ -52,6 +114,140 @@ def get_client_mac_from_request(request: Request):
     
     # If not found, return None
     return None
+
+@router.post("/register", response_model=schemas.Account)
+def register_user(user: schemas.AccountCreate, db: Session = Depends(get_db)):
+    """Register a new user with mobile number and password"""
+    
+    # Check if user already exists
+    db_user = db.query(Account).filter(Account.mobile_number == user.mobile_number).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Mobile number already registered")
+    
+    # Create new user
+    hashed_password = get_password_hash(user.password)
+    db_user = Account(
+        mobile_number=user.mobile_number,
+        password_hash=hashed_password
+    )
+    
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    logger.info(f"✅ New user registered: {user.mobile_number}")
+    return db_user
+
+@router.post("/token")
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Login with mobile number and password to get access token"""
+    user = authenticate_user(db, form_data.username, form_data.password)  # username field contains mobile number
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect mobile number or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Update last login
+    user.last_login = utc_now()
+    db.commit()
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.mobile_number}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/login/account", response_model=schemas.Account)
+def login_user(login_data: schemas.AccountLogin, db: Session = Depends(get_db)):
+    """Login with mobile number and password"""
+    user = authenticate_user(db, login_data.mobile_number, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect mobile number or password"
+        )
+    
+    # Update last login
+    user.last_login = utc_now()
+    db.commit()
+    
+    return user
+
+@router.get("/me", response_model=schemas.Account)
+def read_users_me(current_user: models.Account = Depends(get_current_user)):
+    """Get current user information"""
+    return current_user
+
+@router.post("/login", response_model=schemas.LoginResponse)
+def login_with_voucher(login_data: schemas.LoginRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Validate voucher and mobile number, then redirect to grant URL if valid.
+    This endpoint is called from the Meraki splash page.
+    """
+    # Get client_mac from login data or request parameters
+    client_mac = login_data.client_mac or request.query_params.get('client_mac')
+    
+    logger.info(f"🔍 PRODUCTION: Login request - Mobile: {login_data.mobile_number}, MAC: {client_mac}")
+    
+    # Find the account by mobile number
+    account = db.query(models.Account).filter(models.Account.mobile_number == login_data.mobile_number).first()
+    if not account:
+        return schemas.LoginResponse(
+            success=False,
+            message="Account not found. Please check your mobile number."
+        )
+
+    # Find the voucher
+    voucher = db.query(models.Voucher).filter(
+        models.Voucher.code == login_data.voucher_code,
+        models.Voucher.account_id == account.id
+    ).first()
+
+    if not voucher:
+        return schemas.LoginResponse(
+            success=False,
+            message="Invalid voucher code for this mobile number."
+        )
+
+    # Check voucher status and expiry
+    if voucher.status != "active":
+        return schemas.LoginResponse(
+            success=False,
+            message=f"Voucher is {voucher.status}. Please purchase a new voucher."
+        )
+
+    # Check if voucher has expired
+    now = utc_now()
+    if voucher.expires_at and voucher.expires_at < now:
+        # Mark voucher as expired
+        voucher.status = "expired"
+        db.commit()
+        return schemas.LoginResponse(
+            success=False,
+            message="Voucher has expired. Please purchase a new voucher."
+        )
+
+    # Set expiry time if not set (for time-based vouchers)
+    if not voucher.expires_at:
+        expires_at = now + timedelta(minutes=voucher.duration)
+        voucher.expires_at = expires_at
+        db.commit()
+
+    # Include client_mac in the grant URL if available
+    if client_mac:
+        grant_url = f"/auth/grant?mobile_number={login_data.mobile_number}&voucher_code={login_data.voucher_code}&client_mac={client_mac}"
+        logger.info(f"🔗 PRODUCTION: Grant URL with MAC: {grant_url}")
+    else:
+        grant_url = f"/auth/grant?mobile_number={login_data.mobile_number}&voucher_code={login_data.voucher_code}"
+        logger.error("❌ PRODUCTION: No client_mac available - this will likely fail at grant step")
+
+    return schemas.LoginResponse(
+        success=True,
+        message="Voucher validated! You will be connected to Wi-Fi.",
+        redirect_url=grant_url
+    )
 @router.post("/login", response_model=schemas.LoginResponse)
 def login_with_voucher(login_data: schemas.LoginRequest, request: Request, db: Session = Depends(get_db)):
     """
@@ -500,4 +696,76 @@ Thank you for choosing Ditronics Wi-Fi!"""
         "voucher_code": code,
         "duration": 10,
         "email": email
+    }
+
+# NEW USER DASHBOARD ENDPOINTS
+
+@router.get("/user/dashboard", response_model=schemas.UserDashboard)
+async def get_user_dashboard(current_user: Account = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get user dashboard data with vouchers, transactions, and available packages"""
+    # Get user's vouchers
+    vouchers = db.query(Voucher).filter(Voucher.account_id == current_user.id).order_by(Voucher.created_at.desc()).all()
+    
+    # Get user's transactions
+    transactions = db.query(Transaction).filter(Transaction.account_id == current_user.id).order_by(Transaction.created_at.desc()).limit(10).all()
+    
+    # Get available packages
+    packages = db.query(Package).filter(Package.is_active == True).order_by(Package.price).all()
+    
+    return schemas.UserDashboard(
+        account=current_user,
+        vouchers=vouchers,
+        transactions=transactions,
+        available_packages=packages
+    )
+
+@router.get("/user/panel", response_class=HTMLResponse)
+async def user_panel_page(request: Request, current_user: Account = Depends(get_current_user), db: Session = Depends(get_db)):
+    """User dashboard page"""
+    # Get dashboard data
+    vouchers = db.query(Voucher).filter(Voucher.account_id == current_user.id).order_by(Voucher.created_at.desc()).all()
+    transactions = db.query(Transaction).filter(Transaction.account_id == current_user.id).order_by(Transaction.created_at.desc()).limit(10).all()
+    packages = db.query(Package).filter(Package.is_active == True).order_by(Package.price).all()
+    
+    return templates.TemplateResponse("user_panel.html", {
+        "request": request,
+        "user": current_user,
+        "vouchers": vouchers,
+        "transactions": transactions,
+        "packages": packages
+    })
+
+@router.post("/user/purchase-package")
+async def purchase_package(
+    package_id: str = Form(...),
+    current_user: Account = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Initiate package purchase process"""
+    # Get package details
+    package = db.query(Package).filter(Package.id == package_id).first()
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    if not package.is_active:
+        raise HTTPException(status_code=400, detail="Package is not available")
+    
+    # Create payment intent
+    payment_intent = schemas.PaymentIntentCreate(
+        mobile_number=current_user.mobile_number,
+        package_id=package_id
+    )
+    
+    # Return payment details for frontend to handle
+    return {
+        "package": {
+            "id": package.id,
+            "name": package.name,
+            "price": float(package.price),
+            "currency": package.currency,
+            "duration": package.duration,
+            "data_limit": package.data_limit
+        },
+        "payment_reference": f"PKG_{uuid.uuid4().hex[:8].upper()}",
+        "redirect_url": f"/payment/process?package_id={package_id}"
     }

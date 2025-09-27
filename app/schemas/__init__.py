@@ -2,6 +2,7 @@ from .schemas import (
     # Account schemas
     AccountBase,
     AccountCreate,
+    AccountLogin,
     Account,
 
     # Voucher schemas
@@ -25,11 +26,16 @@ from .schemas import (
     LoginResponse,
     VoucherValidation,
     VoucherValidationResponse,
+
+    # User Dashboard schemas
+    UserDashboard,
+    VoucherStats,
 )
 
 __all__ = [
     "AccountBase",
     "AccountCreate",
+    "AccountLogin",
     "Account",
     "VoucherBase",
     "VoucherCreate",
@@ -45,4 +51,6 @@ __all__ = [
     "LoginResponse",
     "VoucherValidation",
     "VoucherValidationResponse",
+    "UserDashboard",
+    "VoucherStats",
 ]

@@ -11,36 +11,40 @@ from typing import Optional
 
 from app import schemas, utils
 from app.core.config import settings
-from app.database import SessionLocal
-from app.models import models
+from app.database import get_db
+from app.models.models import Account, Voucher, Transaction, Package
 
 router = APIRouter()
 
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 @router.post("/create-payment-intent")
-def create_payment_intent(payment_intent_in: schemas.PaymentIntentCreate):
+def create_payment_intent(payment_intent_in: schemas.PaymentIntentCreate, db: Session = Depends(get_db)):
     """
     Create a payment intent for M-Pesa or dummy payment.
     Returns payment details for frontend to process.
     """
     try:
+        # Get package details
+        package = db.query(Package).filter(Package.id == payment_intent_in.package_id).first()
+        if not package:
+            raise HTTPException(status_code=404, detail="Package not found")
+        
+        if not package.is_active:
+            raise HTTPException(status_code=400, detail="Package is not available")
+
         # Generate unique payment reference
         payment_ref = f"WIFI_{uuid.uuid4().hex[:8].upper()}"
 
-        # Calculate amount in appropriate currency
-        amount_kes = payment_intent_in.amount  # Assuming amount is in KES for M-Pesa
-
         payment_response = {
             "payment_reference": payment_ref,
-            "amount": amount_kes,
-            "currency": "KES",
+            "amount": float(package.price),
+            "currency": package.currency,
+            "package": {
+                "id": package.id,
+                "name": package.name,
+                "duration": package.duration,
+                "data_limit": package.data_limit,
+                "price": float(package.price)
+            },
             "payment_methods": [
                 {
                     "method": "mpesa",
@@ -56,9 +60,8 @@ def create_payment_intent(payment_intent_in: schemas.PaymentIntentCreate):
                 }
             ],
             "metadata": {
-                "email": payment_intent_in.email,
-                "duration": payment_intent_in.duration,
-                "data_limit": payment_intent_in.data_limit,
+                "mobile_number": payment_intent_in.mobile_number,
+                "package_id": package.id,
                 "product_type": "wifi_voucher"
             }
         }
@@ -118,20 +121,20 @@ def initiate_mpesa_payment(payment_data: schemas.MPesaPaymentRequest, db: Sessio
             result = response.json()
 
             # Store pending transaction
-            transaction = models.Transaction(
+            transaction = Transaction(
                 account_id=None,  # Will be set after callback
                 voucher_id=None,  # Will be set after voucher creation
+                package_id=payment_data.package_id,
                 amount=Decimal(payment_data.amount),
                 payment_method="mpesa",
                 status="pending",
-                metadata=json.dumps({
+                transaction_metadata=json.dumps({
                     "payment_reference": payment_data.payment_reference,
                     "phone_number": payment_data.phone_number,
                     "checkout_request_id": result.get("CheckoutRequestID"),
                     "merchant_request_id": result.get("MerchantRequestID"),
-                    "email": payment_data.email,
-                    "duration": payment_data.duration,
-                    "data_limit": payment_data.data_limit
+                    "mobile_number": payment_data.mobile_number,
+                    "package_id": payment_data.package_id
                 })
             )
             db.add(transaction)
@@ -164,26 +167,35 @@ async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
         checkout_request_id = stk_callback.get("CheckoutRequestID")
 
         # Find the pending transaction
-        transaction = db.query(models.Transaction).filter(
-            models.Transaction.metadata.contains(f'"checkout_request_id": "{checkout_request_id}"')
+        transaction = db.query(Transaction).filter(
+            Transaction.transaction_metadata.contains(f'"checkout_request_id": "{checkout_request_id}"')
         ).first()
 
         if not transaction:
             return {"status": "error", "message": "Transaction not found"}
 
         # Parse metadata
-        metadata = json.loads(transaction.metadata)
+        metadata = json.loads(transaction.transaction_metadata)
 
         if result_code == 0:  # Success
             # Payment successful - create voucher
-            email = metadata.get("email")
-            duration = metadata.get("duration", 30)
-            data_limit = metadata.get("data_limit")
+            mobile_number = metadata.get("mobile_number")
+            package_id = metadata.get("package_id")
+            
+            # Get package details
+            package = db.query(Package).filter(Package.id == package_id).first()
+            if not package:
+                transaction.status = "failed"
+                db.commit()
+                return {"status": "error", "message": "Package not found"}
 
             # Create or get account
-            account = db.query(models.Account).filter(models.Account.email == email).first()
+            account = db.query(Account).filter(Account.mobile_number == mobile_number).first()
             if not account:
-                account = models.Account(email=email)
+                # Create account with a default password (user should change it later)
+                from app.routers.auth import get_password_hash
+                hashed_password = get_password_hash("changeme123")  # Default password
+                account = Account(mobile_number=mobile_number, password_hash=hashed_password)
                 db.add(account)
                 db.commit()
                 db.refresh(account)
@@ -191,15 +203,16 @@ async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
             # Generate unique voucher code
             while True:
                 code = utils.generate_voucher_code()
-                if not db.query(models.Voucher).filter(models.Voucher.code == code).first():
+                if not db.query(Voucher).filter(Voucher.code == code).first():
                     break
 
-            # Create voucher
-            voucher = models.Voucher(
+            # Create voucher with package details
+            voucher = Voucher(
                 code=code,
                 account_id=account.id,
-                duration=duration,
-                data_limit=data_limit,
+                package_id=package.id,
+                duration=package.duration,
+                data_limit=package.data_limit,
                 status="active"
             )
             db.add(voucher)
@@ -212,33 +225,35 @@ async def mpesa_callback(request: Request, db: Session = Depends(get_db)):
             transaction.voucher_id = voucher.id
             db.commit()
 
-            # Send voucher via email
+            # Send voucher via SMS or email if available
             subject = "Your Wi-Fi Voucher - M-Pesa Payment Confirmed"
-            data_info = f" and {data_limit}MB of data" if data_limit else ""
+            data_info = f" and {package.data_limit}MB of data" if package.data_limit else ""
             message = f"""Hello,
 
 Thank you for your M-Pesa payment! Your Wi-Fi voucher is ready.
 
 Voucher Details:
 - Code: {voucher.code}
-- Duration: {duration} minutes{data_info}
+- Package: {package.name}
+- Duration: {package.duration} minutes{data_info}
 - Status: Active
 
 How to use:
 1. Connect to the Wi-Fi network
 2. You'll be redirected to the login page
-3. Enter your email: {email}
+3. Enter your mobile number: {mobile_number}
 4. Enter your voucher code: {voucher.code}
 5. Enjoy your internet access!
 
-The voucher will automatically expire after {duration} minutes of use.
+The voucher will automatically expire after {package.duration} minutes of use.
 
 Thank you for choosing our service!
 
 Best regards,
 Wi-Fi Support Team"""
 
-            utils.send_email(to_email=email, subject=subject, message=message)
+            # For now, just log the voucher (you can integrate SMS service later)
+            print(f"Voucher created for {mobile_number}: {voucher.code}")
 
         else:
             # Payment failed
@@ -258,15 +273,25 @@ def process_dummy_payment(payment_data: schemas.DummyPaymentRequest, db: Session
     This simulates a successful payment instantly.
     """
     try:
-        email = payment_data.email
-        duration = payment_data.duration
-        data_limit = payment_data.data_limit
+        mobile_number = payment_data.mobile_number
+        package_id = payment_data.package_id
         amount = payment_data.amount
+        
+        # Get package details
+        package = db.query(Package).filter(Package.id == package_id).first()
+        if not package:
+            raise HTTPException(status_code=404, detail="Package not found")
+        
+        if not package.is_active:
+            raise HTTPException(status_code=400, detail="Package is not available")
 
         # Create or get account
-        account = db.query(models.Account).filter(models.Account.email == email).first()
+        account = db.query(Account).filter(Account.mobile_number == mobile_number).first()
         if not account:
-            account = models.Account(email=email)
+            # Create account with a default password (user should change it later)
+            from app.routers.auth import get_password_hash
+            hashed_password = get_password_hash("changeme123")  # Default password
+            account = Account(mobile_number=mobile_number, password_hash=hashed_password)
             db.add(account)
             db.commit()
             db.refresh(account)
@@ -274,15 +299,16 @@ def process_dummy_payment(payment_data: schemas.DummyPaymentRequest, db: Session
         # Generate unique voucher code
         while True:
             code = utils.generate_voucher_code()
-            if not db.query(models.Voucher).filter(models.Voucher.code == code).first():
+            if not db.query(Voucher).filter(Voucher.code == code).first():
                 break
 
-        # Create voucher
-        voucher = models.Voucher(
+        # Create voucher with package details
+        voucher = Voucher(
             code=code,
             account_id=account.id,
-            duration=duration,
-            data_limit=data_limit,
+            package_id=package.id,
+            duration=package.duration,
+            data_limit=package.data_limit,
             status="active"
         )
         db.add(voucher)
@@ -290,13 +316,14 @@ def process_dummy_payment(payment_data: schemas.DummyPaymentRequest, db: Session
         db.refresh(voucher)
 
         # Create transaction record
-        transaction = models.Transaction(
+        transaction = Transaction(
             account_id=account.id,
             voucher_id=voucher.id,
+            package_id=package.id,
             amount=Decimal(amount),
             payment_method="dummy",
             status="completed",
-            metadata=json.dumps({
+            transaction_metadata=json.dumps({
                 "payment_reference": payment_data.payment_reference,
                 "test_payment": True
             })
@@ -304,31 +331,8 @@ def process_dummy_payment(payment_data: schemas.DummyPaymentRequest, db: Session
         db.add(transaction)
         db.commit()
 
-        # Send voucher via email
-        subject = "Your Wi-Fi Voucher - Test Payment Successful"
-        data_info = f" and {data_limit}MB of data" if data_limit else ""
-        message = f"""Hello,
-
-Your test payment was successful! Here's your Wi-Fi voucher:
-
-Voucher Details:
-- Code: {voucher.code}
-- Duration: {duration} minutes{data_info}
-- Status: Active
-
-How to use:
-1. Connect to the Wi-Fi network
-2. You'll be redirected to the login page
-3. Enter your email: {email}
-4. Enter your voucher code: {voucher.code}
-5. Enjoy your internet access!
-
-This was a test payment. In production, you would use M-Pesa or other payment methods.
-
-Best regards,
-Wi-Fi Support Team"""
-
-        utils.send_email(to_email=email, subject=subject, message=message)
+        # For now, just log the voucher creation (you can integrate SMS service later)
+        print(f"Test voucher created for {mobile_number}: {voucher.code}")
 
         return {
             "success": True,
@@ -342,91 +346,39 @@ Wi-Fi Support Team"""
         raise HTTPException(status_code=500, detail=f"Payment processing error: {str(e)}")
 
 @router.get("/plans")
-def get_voucher_plans():
+def get_voucher_plans(db: Session = Depends(get_db)):
     """
-    Get available voucher plans with pricing in KES.
+    Get available voucher plans from database packages.
     """
-    plans = [
-        {
-            "id": "demo",
-            "name": "Demo Access",
-            "duration": 10,  # minutes
-            "data_limit": None,
-            "price": 0,  # Free
-            "currency": "KES",
-            "description": "10 minutes of free Wi-Fi access"
-        },
-        {
-            "id": "basic",
-            "name": "Basic Access",
-            "duration": 60,  # 1 hour
-            "data_limit": None,
-            "price": 50,  # KES 50
-            "currency": "KES",
-            "description": "1 hour of unlimited Wi-Fi access"
-        },
-        {
-            "id": "standard",
-            "name": "Standard Access",
-            "duration": 180,  # 3 hours
-            "data_limit": None,
-            "price": 100,  # KES 100
-            "currency": "KES",
-            "description": "3 hours of unlimited Wi-Fi access"
-        },
-        {
-            "id": "premium",
-            "name": "Premium Access",
-            "duration": 720,  # 12 hours
-            "data_limit": None,
-            "price": 200,  # KES 200
-            "currency": "KES",
-            "description": "12 hours of unlimited Wi-Fi access"
-        },
-        {
-            "id": "daily",
-            "name": "Daily Pass",
-            "duration": 1440,  # 24 hours
-            "data_limit": None,
-            "price": 300,  # KES 300
-            "currency": "KES",
-            "description": "24 hours of unlimited Wi-Fi access"
-        },
-        {
-            "id": "data_500mb",
-            "name": "500MB Data Pack",
-            "duration": 4320,  # 3 days
-            "data_limit": 500,  # 500MB
-            "price": 150,  # KES 150
-            "currency": "KES",
-            "description": "500MB of data valid for 3 days"
-        },
-        {
-            "id": "data_1gb",
-            "name": "1GB Data Pack",
-            "duration": 10080,  # 7 days
-            "data_limit": 1024,  # 1GB
-            "price": 250,  # KES 250
-            "currency": "KES",
-            "description": "1GB of data valid for 7 days"
-        }
-    ]
-
+    packages = db.query(Package).filter(Package.is_active == True).order_by(Package.price).all()
+    
+    plans = []
+    for package in packages:
+        plans.append({
+            "id": package.id,
+            "name": package.name,
+            "duration": package.duration,
+            "data_limit": package.data_limit,
+            "price": float(package.price),
+            "currency": package.currency,
+            "description": package.description or f"{package.duration} minutes of {'unlimited' if not package.data_limit else str(package.data_limit) + 'MB'} Wi-Fi access"
+        })
+    
     return {"plans": plans}
 
 @router.post("/create-demo-voucher")
-def create_demo_voucher(email: str, db: Session = Depends(get_db)):
+def create_demo_voucher(mobile_number: str, db: Session = Depends(get_db)):
     """
     Create a free demo voucher for new users.
     This should have rate limiting in production.
     """
     # Check if user already has an active demo voucher
-    account = db.query(models.Account).filter(models.Account.email == email).first()
+    account = db.query(Account).filter(Account.mobile_number == mobile_number).first()
     if account:
-        existing_demo = db.query(models.Voucher).filter(
-            models.Voucher.account_id == account.id,
-            models.Voucher.duration == 10,  # Demo vouchers are 10 minutes
-            models.Voucher.status == "active"
+        existing_demo = db.query(Voucher).filter(
+            Voucher.account_id == account.id,
+            Voucher.duration == 10,  # Demo vouchers are 10 minutes
+            Voucher.status == "active"
         ).first()
 
         if existing_demo:
@@ -435,8 +387,10 @@ def create_demo_voucher(email: str, db: Session = Depends(get_db)):
                 "voucher_code": existing_demo.code
             }
     else:
-        # Create account
-        account = models.Account(email=email)
+        # Create account with default password
+        from app.routers.auth import get_password_hash
+        hashed_password = get_password_hash("demo123")  # Default demo password
+        account = Account(mobile_number=mobile_number, password_hash=hashed_password)
         db.add(account)
         db.commit()
         db.refresh(account)
@@ -444,11 +398,11 @@ def create_demo_voucher(email: str, db: Session = Depends(get_db)):
     # Generate a unique voucher code
     while True:
         code = utils.generate_voucher_code()
-        if not db.query(models.Voucher).filter(models.Voucher.code == code).first():
+        if not db.query(Voucher).filter(Voucher.code == code).first():
             break
 
     # Create demo voucher
-    db_voucher = models.Voucher(
+    db_voucher = Voucher(
         code=code,
         account_id=account.id,
         duration=10,  # 10 minutes
@@ -460,7 +414,7 @@ def create_demo_voucher(email: str, db: Session = Depends(get_db)):
     db.refresh(db_voucher)
 
     # Create transaction record for the free voucher
-    transaction = models.Transaction(
+    transaction = Transaction(
         account_id=account.id,
         voucher_id=db_voucher.id,
         amount=Decimal('0.00'),
@@ -470,33 +424,14 @@ def create_demo_voucher(email: str, db: Session = Depends(get_db)):
     db.add(transaction)
     db.commit()
 
-    # Send email
-    subject = "Your FREE Wi-Fi Demo Voucher"
-    message = f"""Hello,
-
-Welcome! Here's your free demo Wi-Fi voucher:
-
-Voucher Code: {code}
-Duration: 10 minutes
-Data: Unlimited
-
-How to use:
-1. Connect to the Wi-Fi network
-2. Enter your email: {email}
-3. Enter your voucher code: {code}
-4. Enjoy 10 minutes of free internet!
-
-Want more time? Purchase a full voucher plan for extended access.
-
-Best regards,
-Wi-Fi Support Team"""
-
-    utils.send_email(to_email=email, subject=subject, message=message)
+    # For now, just log the voucher creation (you can integrate SMS service later)
+    print(f"Demo voucher created for {mobile_number}: {code}")
 
     return {
-        "message": "Demo voucher created and sent to email",
+        "message": "Demo voucher created",
         "voucher_code": code,
-        "duration": 10
+        "duration": 10,
+        "mobile_number": mobile_number
     }
 
 @router.get("/transaction/{transaction_id}")
@@ -504,7 +439,7 @@ def get_transaction_status(transaction_id: int, db: Session = Depends(get_db)):
     """
     Get transaction status for payment tracking.
     """
-    transaction = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
