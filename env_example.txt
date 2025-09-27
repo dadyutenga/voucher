@@ -1,0 +1,45 @@
+# Database Configuration
+# Replace with your actual PostgreSQL credentials
+DATABASE_URL=postgresql://username:password@localhost:5432/wifi_voucher_db
+
+# Application Security
+SECRET_KEY=your-super-secret-key-change-this-in-production
+
+# Email/SMTP Configuration (Optional - for sending vouchers via email)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SENDER_EMAIL=your-email@gmail.com
+
+# M-Pesa Configuration (Optional - for mobile payments in Kenya/Tanzania)
+MPESA_CONSUMER_KEY=your_mpesa_consumer_key
+MPESA_CONSUMER_SECRET=your_mpesa_consumer_secret
+MPESA_SHORTCODE=your_shortcode
+MPESA_PASSKEY=your_passkey
+MPESA_CALLBACK_URL=https://yourdomain.com/payment/mpesa/callback
+
+# Payment Configuration
+DEFAULT_CURRENCY=TZS
+
+# Environment
+ENVIRONMENT=development
+DEBUG=true
+
+# Meraki Configuration (Optional - for WiFi integration)
+MERAKI_API_KEY=your_meraki_api_key
+MERAKI_BASE_GRANT_URL=https://your-network.meraki.com/guest/s/default/
+MERAKI_NETWORK_ID=your_network_id
+
+# Redis Configuration (Optional - for caching)
+REDIS_URL=redis://localhost:6379/0
+
+# CORS Configuration
+CORS_ORIGINS=http://localhost:3000,http://localhost:8000,https://yourdomain.com
+
+# Security Settings
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Rate Limiting
+DEMO_VOUCHER_RATE_LIMIT=3
+DEMO_VOUCHER_RATE_WINDOW=3600

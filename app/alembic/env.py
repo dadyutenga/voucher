@@ -1,6 +1,7 @@
 from logging.config import fileConfig
 import os
 import sys
+from pathlib import Path
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -8,25 +9,23 @@ from sqlalchemy import pool
 from alembic import context
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv(project_root / '.env')
 
 # Import our models and configuration
-try:
-    from models.models import Base
-    from core.config import settings
-except ImportError:
-    # Alternative import path
-    import sys
-    import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from models.models import Base
-    from core.config import settings
+from app.models.models import Base
+from app.core.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
 # Set the database URL from our settings
+print(f"Using DATABASE_URL: {settings.DATABASE_URL}")
 config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
 
 # Interpret the config file for Python logging.
