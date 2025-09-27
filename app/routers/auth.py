@@ -365,29 +365,6 @@ def create_demo_voucher(mobile_number: str, db: Session = Depends(get_db)):
 
 # NEW USER DASHBOARD ENDPOINTS
 
-@router.get("/user/dashboard", response_model=schemas.UserDashboard)
-async def get_user_dashboard(current_user: Account = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Get user dashboard data with vouchers, transactions, and available packages"""
-    try:
-        # Get user's vouchers
-        vouchers = db.query(Voucher).filter(Voucher.account_id == current_user.id).order_by(Voucher.created_at.desc()).all()
-        
-        # Get user's transactions  
-        transactions = db.query(Transaction).filter(Transaction.account_id == current_user.id).order_by(Transaction.created_at.desc()).all()
-        
-        # Get available packages
-        packages = db.query(Package).filter(Package.is_active == True).all()
-        
-        return schemas.UserDashboard(
-            account=current_user,
-            vouchers=vouchers,
-            transactions=transactions,
-            available_packages=packages
-        )
-    except Exception as e:
-        logger.error(f"Error fetching user dashboard: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch dashboard data")
-
 @router.get("/dashboard", response_model=schemas.UserDashboard)
 async def user_dashboard(current_user: Account = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get user dashboard data with vouchers, transactions, and available packages"""
@@ -417,6 +394,7 @@ async def user_dashboard(current_user: Account = Depends(get_current_user), db: 
 async def user_panel(request: Request):
     """Serve the user panel HTML page"""
     return templates.TemplateResponse("user_panel.html", {"request": request})
+
 
 @router.post("/user/purchase-package")
 async def purchase_package(

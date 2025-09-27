@@ -291,9 +291,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('access_token');
             if (token) {
-                window.location.href = '/user/user-panel';
+                // Fix this line - change from /user/user-panel to /user/panel
+                window.location.href = '/user/panel';
             }
         });
+
+        
     </script>
 </body>
 </html>

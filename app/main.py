@@ -63,7 +63,7 @@ async def user_register_page(request: Request):
     """
     return templates.TemplateResponse("user_register.html", {"request": request})
 
-@app.get("/user/user-panel", response_class=HTMLResponse)
+@app.get("/user/panel", response_class=HTMLResponse)
 async def user_panel_page(request: Request):
     """
     User dashboard/panel for managing vouchers and packages
@@ -108,7 +108,7 @@ async def legacy_dashboard_page(request: Request):
     """
     Legacy dashboard - redirect to user panel
     """
-    return RedirectResponse(url="/user/user-panel")
+    return RedirectResponse(url="/user/panel")
 
 @app.get("/admin", response_class=HTMLResponse)
 async def legacy_admin_page(request: Request):
