@@ -5,149 +5,155 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Wi-Fi Access</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        .register-container { 
-            background: rgba(255,255,255,0.95); 
-            backdrop-filter: blur(10px);
-            border-radius: 20px; 
-            padding: 40px; 
-            width: 100%; 
+        .register-container {
+            background: #fff;
+            border-radius: 8px;
+            padding: 2rem;
+            width: 100%;
             max-width: 450px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
         }
-        .logo { 
-            font-size: 3em; 
-            margin-bottom: 10px; 
+        .logo {
+            font-size: 3em;
+            margin-bottom: 1rem;
         }
-        .title { 
-            color: #333; 
-            font-size: 2em; 
-            margin-bottom: 15px; 
+        .title {
+            color: #333;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
             font-weight: 600;
         }
         .subtitle {
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 2rem;
             line-height: 1.5;
         }
-        .form-group { 
-            margin-bottom: 20px; 
-            text-align: left; 
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
         }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 8px; 
-            color: #555; 
-            font-weight: 600;
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+            font-weight: 500;
         }
-        .form-group input { 
-            width: 100%; 
-            padding: 15px 20px; 
-            border: 2px solid #e9ecef; 
-            border-radius: 10px; 
-            font-size: 16px;
-            transition: all 0.3s;
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
         }
-        .form-group input:focus { 
-            outline: none; 
-            border-color: #667eea; 
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
         }
-        .register-btn { 
-            width: 100%; 
-            padding: 15px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            border: none; 
-            border-radius: 10px; 
-            font-size: 16px; 
-            font-weight: 600; 
+        .register-btn {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 20px;
+            transition: background 0.3s ease;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
-        .register-btn:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        .register-btn:hover {
+            background: #0056b3;
         }
-        .register-btn:disabled { 
-            background: #6c757d; 
-            cursor: not-allowed; 
-            transform: none;
+        .register-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
         }
-        .login-link { 
-            color: #667eea; 
-            text-decoration: none; 
-            font-weight: 600;
+        .login-link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
         }
-        .login-link:hover { 
-            text-decoration: underline; 
+        .login-link:hover {
+            text-decoration: underline;
         }
-        .error-message { 
-            color: #dc3545; 
-            background: #f8d7da; 
-            border: 1px solid #f5c6cb; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-bottom: 20px;
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
             display: none;
         }
-        .success-message { 
-            color: #155724; 
-            background: #d4edda; 
-            border: 1px solid #c3e6cb; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-bottom: 20px;
+        .success-message {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
             display: none;
         }
-        .loading { 
+        .loading {
             display: none;
-            width: 20px; 
-            height: 20px; 
-            border: 3px solid rgba(255,255,255,.3); 
-            border-radius: 50%; 
-            border-top-color: #fff; 
-            animation: spin 1s ease-in-out infinite; 
-            margin: 0 auto;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
-        @keyframes spin { 
-            to { transform: rotate(360deg); } 
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        .help-text { 
-            font-size: 14px; 
-            color: #6c757d; 
-            margin-top: 5px;
+        .help-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
         }
         .password-requirements {
             background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 10px;
-            font-size: 14px;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
             color: #666;
         }
         .password-requirements h4 {
             color: #333;
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
         }
         .password-requirements ul {
             margin: 0;
-            padding-left: 20px;
+            padding-left: 1.25rem;
         }
         .password-requirements li {
-            margin: 5px 0;
+            margin: 0.25rem 0;
         }
         .requirement.valid {
             color: #28a745;
@@ -157,42 +163,49 @@
         }
         .back-link {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
+            top: 1rem;
+            left: 1rem;
+            color: #007bff;
             text-decoration: none;
-            font-weight: 600;
-            padding: 10px 15px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 8px;
-            transition: all 0.3s;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
         .back-link:hover {
-            background: rgba(255,255,255,0.3);
+            background: #f8f9fa;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         .terms {
-            font-size: 12px;
+            font-size: 0.75rem;
             color: #666;
-            margin-top: 15px;
+            margin-top: 1rem;
             line-height: 1.4;
         }
         .terms a {
-            color: #667eea;
+            color: #007bff;
             text-decoration: none;
         }
         .terms a:hover {
             text-decoration: underline;
         }
+        @media (max-width: 768px) {
+            .register-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
     <a href="/" class="back-link">← Back to Home</a>
-    
+
     <div class="register-container">
-        <div class="logo">📝</div>
         <h1 class="title">Create Account</h1>
         <p class="subtitle">Join our Wi-Fi network and enjoy fast, secure internet access</p>
-        
+
         <div id="error-message" class="error-message"></div>
         <div id="success-message" class="success-message"></div>
 
@@ -202,7 +215,7 @@
                 <input type="tel" id="mobile_number" name="mobile_number" placeholder="+255712345678" required>
                 <div class="help-text">Your Tanzanian mobile number (used for login and notifications)</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" placeholder="Create a secure password" required>
@@ -215,27 +228,27 @@
                     </ul>
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label for="password_confirm">Confirm Password</label>
                 <input type="password" id="password_confirm" name="password_confirm" placeholder="Confirm your password" required>
                 <div class="help-text" id="password-match-text">Passwords must match</div>
             </div>
-            
+
             <button type="submit" class="register-btn">
                 <span class="btn-text">Create Account</span>
                 <div class="loading"></div>
             </button>
         </form>
-        
+
         <p>
-            Already have an account? 
+            Already have an account?
             <a href="/user/login" class="login-link">Login here</a>
         </p>
-        
+
         <div class="terms">
-            By creating an account, you agree to our 
-            <a href="#" onclick="alert('Terms of Service will be implemented')">Terms of Service</a> and 
+            By creating an account, you agree to our
+            <a href="#" onclick="alert('Terms of Service will be implemented')">Terms of Service</a> and
             <a href="#" onclick="alert('Privacy Policy will be implemented')">Privacy Policy</a>
         </div>
     </div>

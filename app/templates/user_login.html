@@ -5,149 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Login - Wi-Fi Access</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        .login-container { 
-            background: rgba(255,255,255,0.95); 
-            backdrop-filter: blur(10px);
-            border-radius: 20px; 
-            padding: 40px; 
-            width: 100%; 
+        .login-container {
+            background: #fff;
+            border-radius: 8px;
+            padding: 2rem;
+            width: 100%;
             max-width: 400px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
         }
-        .logo { 
-            font-size: 3em; 
-            margin-bottom: 10px; 
+        .logo {
+            font-size: 3em;
+            margin-bottom: 1rem;
         }
-        .title { 
-            color: #333; 
-            font-size: 2em; 
-            margin-bottom: 30px; 
+        .title {
+            color: #333;
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
             font-weight: 600;
         }
-        .form-group { 
-            margin-bottom: 20px; 
-            text-align: left; 
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
         }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 8px; 
-            color: #555; 
-            font-weight: 600;
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+            font-weight: 500;
         }
-        .form-group input { 
-            width: 100%; 
-            padding: 15px 20px; 
-            border: 2px solid #e9ecef; 
-            border-radius: 10px; 
-            font-size: 16px;
-            transition: all 0.3s;
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
         }
-        .form-group input:focus { 
-            outline: none; 
-            border-color: #667eea; 
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
         }
-        .login-btn { 
-            width: 100%; 
-            padding: 15px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            border: none; 
-            border-radius: 10px; 
-            font-size: 16px; 
-            font-weight: 600; 
+        .login-btn {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 20px;
+            transition: background 0.3s ease;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
-        .login-btn:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        .login-btn:hover {
+            background: #0056b3;
         }
-        .login-btn:disabled { 
-            background: #6c757d; 
-            cursor: not-allowed; 
-            transform: none;
+        .login-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
         }
-        .register-link { 
-            color: #667eea; 
-            text-decoration: none; 
-            font-weight: 600;
+        .register-link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
         }
-        .register-link:hover { 
-            text-decoration: underline; 
+        .register-link:hover {
+            text-decoration: underline;
         }
-        .error-message { 
-            color: #dc3545; 
-            background: #f8d7da; 
-            border: 1px solid #f5c6cb; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-bottom: 20px;
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
             display: none;
         }
-        .success-message { 
-            color: #155724; 
-            background: #d4edda; 
-            border: 1px solid #c3e6cb; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-bottom: 20px;
+        .success-message {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
             display: none;
         }
-        .loading { 
+        .loading {
             display: none;
-            width: 20px; 
-            height: 20px; 
-            border: 3px solid rgba(255,255,255,.3); 
-            border-radius: 50%; 
-            border-top-color: #fff; 
-            animation: spin 1s ease-in-out infinite; 
-            margin: 0 auto;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
-        @keyframes spin { 
-            to { transform: rotate(360deg); } 
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        .help-text { 
-            font-size: 14px; 
-            color: #6c757d; 
-            margin-top: 5px;
+        .help-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
         }
         .back-link {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
+            top: 1rem;
+            left: 1rem;
+            color: #007bff;
             text-decoration: none;
-            font-weight: 600;
-            padding: 10px 15px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 8px;
-            transition: all 0.3s;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
         .back-link:hover {
-            background: rgba(255,255,255,0.3);
+            background: #f8f9fa;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        @media (max-width: 768px) {
+            .login-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
     <a href="/" class="back-link">← Back to Home</a>
-    
+
     <div class="login-container">
-        <div class="logo">👤</div>
+
         <h1 class="title">User Login</h1>
-        
+
         <div id="error-message" class="error-message"></div>
         <div id="success-message" class="success-message"></div>
 
@@ -157,20 +171,20 @@
                 <input type="tel" id="mobile_number" name="mobile_number" placeholder="+255712345678" required>
                 <div class="help-text">Enter your Tanzanian mobile number</div>
             </div>
-            
+
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" placeholder="Enter your password" required>
             </div>
-            
+
             <button type="submit" class="login-btn">
                 <span class="btn-text">Login to Dashboard</span>
                 <div class="loading"></div>
             </button>
         </form>
-        
+
         <p>
-            Don't have an account? 
+            Don't have an account?
             <a href="/user/register" class="register-link">Register here</a>
         </p>
     </div>
