@@ -40,6 +40,11 @@ def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    # Ensure password doesn't exceed bcrypt's 72-byte limit
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+        password = password_bytes.decode('utf-8', errors='replace')
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -186,6 +191,39 @@ async def user_login(login_data: schemas.AccountLogin, db: Session = Depends(get
         "user": user
     }
 
+@router.post("/login/account", response_model=dict)
+async def account_login(login_data: schemas.AccountLogin, db: Session = Depends(get_db)):
+    """Authenticate user with mobile number and password"""
+    user = authenticate_user(db, login_data.mobile_number, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect mobile number or password"
+        )
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.mobile_number}, 
+        expires_delta=access_token_expires
+    )
+    
+    # Update last login
+    user.last_login = utc_now()
+    db.commit()
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": str(user.id),
+            "mobile_number": user.mobile_number,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None
+        }
+    }
+
 # Legacy endpoints for backward compatibility (using mobile_number instead of email)
 @router.post("/login", response_model=schemas.LoginResponse)  
 def login_with_voucher(login_data: schemas.LoginRequest, request: Request, db: Session = Depends(get_db)):
@@ -261,7 +299,7 @@ def login_with_voucher(login_data: schemas.LoginRequest, request: Request, db: S
         redirect_url=grant_url
     )
 
-@router.post("/login", response_model=schemas.LoginResponse)
+@router.post("/login/legacy", response_model=schemas.LoginResponse)
 def login_with_voucher_legacy(login_data: schemas.LoginRequest, request: Request, db: Session = Depends(get_db)):
     """
     Legacy endpoint - Validate voucher and email, then redirect to grant URL if valid.
@@ -270,14 +308,14 @@ def login_with_voucher_legacy(login_data: schemas.LoginRequest, request: Request
     # Get client_mac from login data or request parameters
     client_mac = login_data.client_mac or request.query_params.get('client_mac')
     
-    logger.info(f"🔍 PRODUCTION: Legacy login request - Email: {login_data.email}, MAC: {client_mac}")
+    logger.info(f"🔍 PRODUCTION: Legacy login request - Mobile: {login_data.mobile_number}, MAC: {client_mac}")
     
-    # Find the account by email (legacy)
-    account = db.query(Account).filter(Account.email == login_data.email).first()
+    # Find the account by mobile number (updated from email)
+    account = db.query(Account).filter(Account.mobile_number == login_data.mobile_number).first()
     if not account:
         return schemas.LoginResponse(
             success=False,
-            message="Account not found. Please check your email address."
+            message="Account not found. Please check your mobile number."
         )
 
     # Find the voucher
@@ -321,7 +359,7 @@ def login_with_voucher_legacy(login_data: schemas.LoginRequest, request: Request
     params = []
     if client_mac:
         params.append(f"client_mac={client_mac}")
-    params.append(f"email={login_data.email}")
+    params.append(f"mobile_number={login_data.mobile_number}")
     params.append(f"voucher_code={login_data.voucher_code}")
     
     if params:

@@ -41,6 +41,8 @@ class AccountCreate(AccountBase):
     def validate_password(cls, v):
         if len(v) < 6:
             raise ValueError('Password must be at least 6 characters long')
+        if len(v.encode('utf-8')) > 72:  # Check bytes length
+            raise ValueError('Password must be less than 72 bytes')
         return v
 
 class AccountLogin(BaseModel):
