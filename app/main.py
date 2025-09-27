@@ -94,28 +94,6 @@ async def admin_dashboard_page(request: Request):
     """
     return templates.TemplateResponse("admin_dashboard.html", {"request": request})
 
-# LEGACY ROUTES (for compatibility)
-
-@app.get("/splash", response_class=HTMLResponse)
-async def legacy_splash_page(request: Request):
-    """
-    Legacy splash page - redirect to new user splash
-    """
-    return RedirectResponse(url="/user/splash")
-
-@app.get("/dashboard", response_class=HTMLResponse)  
-async def legacy_dashboard_page(request: Request):
-    """
-    Legacy dashboard - redirect to user panel
-    """
-    return RedirectResponse(url="/user/panel")
-
-@app.get("/admin", response_class=HTMLResponse)
-async def legacy_admin_page(request: Request):
-    """
-    Legacy admin - redirect to admin dashboard
-    """
-    return RedirectResponse(url="/admin/dashboard")
 
 # API HEALTH AND INFO
 
