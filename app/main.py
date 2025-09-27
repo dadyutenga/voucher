@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from app.routers import admin, payment, auth
 from app.database import SessionLocal
-from app.models import models
+from app.models.models import *
 
 app = FastAPI(title="Wi-Fi Voucher System", description="Production-ready Wi-Fi hotspot with voucher-based access control")
 

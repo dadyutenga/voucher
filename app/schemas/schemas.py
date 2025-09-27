@@ -70,7 +70,7 @@ class PackageBase(BaseModel):
     currency: str = Field(default="TZS")
 
 class PackageCreate(PackageBase):
-    id: str = Field(..., regex=r'^[a-z0-9_-]+$', description="Package ID (alphanumeric, lowercase)")
+    id: str = Field(..., pattern=r'^[a-z0-9_-]+$', description="Package ID (alphanumeric, lowercase)")
 
 class PackageUpdate(BaseModel):
     name: Optional[str] = None
