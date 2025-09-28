@@ -365,7 +365,7 @@ def create_demo_voucher(mobile_number: str, db: Session = Depends(get_db)):
 
 # NEW USER DASHBOARD ENDPOINTS
 
-@router.get("/dashboard", response_model=schemas.UserDashboard)
+@router.get("/panel", response_model=schemas.UserDashboard)
 async def user_dashboard(current_user: Account = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get user dashboard data with vouchers, transactions, and available packages"""
     try:

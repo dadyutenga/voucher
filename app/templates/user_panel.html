@@ -442,13 +442,6 @@
                     <tr>
                         <td colspan="3" class="loading-placeholder">Loading your vouchers...</td>
                     </tr>
-                    <!-- Example row: 
-                    <tr>
-                        <td>ABC123</td>
-                        <td class="voucher-status active">Active</td>
-                        <td>2025-10-01</td>
-                    </tr>
-                    -->
                 </tbody>
             </table>
         </section>
@@ -570,6 +563,207 @@
         // Close modal on outside click
         document.getElementById('payment-modal').addEventListener('click', function(e) {
             if (e.target === this) closePaymentModal();
+        });
+
+        // ---------------------------
+        // New: load dashboard data
+        // ---------------------------
+        async function loadDashboard() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                // Not logged in: redirect to login
+                window.location.href = '/user/login';
+                return;
+            }
+
+            try {
+                const resp = await fetch('/auth/panel', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (resp.status === 401) {
+                    // Token invalid/expired: clear and redirect
+                    localStorage.removeItem('access_token');
+                    alert('Session expired. Please log in again.');
+                    window.location.href = '/user/login';
+                    return;
+                }
+
+                if (!resp.ok) {
+                    console.error('Failed to fetch dashboard:', resp.status, await resp.text());
+                    // show minimal UI fallback
+                    document.getElementById('user-phone').textContent = 'Unavailable';
+                    document.getElementById('last-login').textContent = 'Last login: Unavailable';
+                    return;
+                }
+
+                const data = await resp.json();
+
+                // Expected shape: { account: {...}, vouchers: [...], transactions: [...], available_packages: [...] }
+                const account = data.account || data.user || null;
+                const vouchers = data.vouchers || [];
+                const transactions = data.transactions || [];
+                const packages = data.available_packages || data.packages || [];
+
+                // Account info
+                if (account) {
+                    const mobile = account.mobile_number || account.mobile || 'Unknown';
+                    const lastLogin = account.last_login || account.lastLogin || account.updated_at || null;
+                    const createdAt = account.created_at || account.createdAt || null;
+                    const status = typeof account.is_active !== 'undefined' ? (account.is_active ? 'Active' : 'Inactive') : 'Unknown';
+
+                    document.getElementById('user-phone').textContent = mobile;
+                    document.getElementById('account-mobile').textContent = mobile;
+                    document.getElementById('account-status').textContent = status;
+
+                    if (lastLogin) {
+                        let d = new Date(lastLogin);
+                        document.getElementById('last-login').textContent = `Last login: ${d.toLocaleString()}`;
+                    } else {
+                        document.getElementById('last-login').textContent = 'Last login: N/A';
+                    }
+
+                    if (createdAt) {
+                        let d2 = new Date(createdAt);
+                        document.getElementById('account-created').textContent = d2.toLocaleString();
+                    } else {
+                        document.getElementById('account-created').textContent = 'N/A';
+                    }
+                } else {
+                    document.getElementById('user-phone').textContent = 'Unknown';
+                    document.getElementById('last-login').textContent = 'Last login: N/A';
+                }
+
+                // Vouchers summary
+                const totalVouchersEl = document.getElementById('total-vouchers');
+                const activeVouchersEl = document.getElementById('active-vouchers');
+
+                totalVouchersEl.textContent = vouchers.length;
+                const activeCount = vouchers.filter(v => (v.status || '').toLowerCase() === 'active').length;
+                activeVouchersEl.textContent = activeCount;
+
+                // Transactions summary (sum amounts)
+                let totalSpent = 0;
+                transactions.forEach(t => {
+                    const amt = parseFloat(t.amount || t.price || t.total || 0);
+                    if (!isNaN(amt)) totalSpent += amt;
+                });
+                document.getElementById('total-spent').textContent = totalSpent.toLocaleString();
+
+                // Populate packages grid
+                const packagesGrid = document.getElementById('packages-grid');
+                packagesGrid.innerHTML = '';
+                if (packages.length === 0) {
+                    const noPackages = document.createElement('div');
+                    noPackages.className = 'package-card loading';
+                    noPackages.textContent = 'No available packages.';
+                    packagesGrid.appendChild(noPackages);
+                } else {
+                    packages.forEach(p => {
+                        const card = document.createElement('div');
+                        card.className = 'package-card';
+                        const name = p.name || p.id || 'Package';
+                        const price = (p.price !== undefined && p.price !== null) ? Number(p.price).toLocaleString() : 'N/A';
+                        const duration = p.duration ? `${p.duration} min` : 'N/A';
+                        const dataLimit = (p.data_limit || p.data_limit === 0) ? `${p.data_limit} MB` : 'Unlimited';
+                        card.innerHTML = `
+                            <div class="package-name">${escapeHtml(name)}</div>
+                            <div class="package-price">${price} ${p.currency || 'TZS'}</div>
+                            <div class="package-desc">${escapeHtml(p.description || `${dataLimit}, ${duration}`)}</div>
+                            <button class="btn btn-primary" onclick="purchasePackage('${p.id || p.name}')">Buy Now</button>
+                        `;
+                        packagesGrid.appendChild(card);
+                    });
+                }
+
+                // Populate vouchers table
+                const vouchersTableBody = document.querySelector('#vouchers-table tbody');
+                vouchersTableBody.innerHTML = '';
+                if (vouchers.length === 0) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td colspan="3" class="loading-placeholder">You have no vouchers yet.</td>`;
+                    vouchersTableBody.appendChild(tr);
+                } else {
+                    vouchers.forEach(v => {
+                        const tr = document.createElement('tr');
+                        const code = escapeHtml(v.code || v.id || '');
+                        const status = (v.status || '').toLowerCase();
+                        const expires = v.expires_at || v.expiresAt || v.expires || '';
+                        let statusClass = '';
+                        if (status === 'active') statusClass = 'voucher-status active';
+                        tr.innerHTML = `
+                            <td>${code}</td>
+                            <td class="${statusClass}">${escapeHtml(v.status || '')}</td>
+                            <td>${expires ? (new Date(expires)).toLocaleString() : 'N/A'}</td>
+                        `;
+                        vouchersTableBody.appendChild(tr);
+                    });
+                }
+
+            } catch (err) {
+                console.error('Error loading dashboard:', err);
+                // Fail gracefully
+                document.getElementById('user-phone').textContent = 'Unavailable';
+                document.getElementById('last-login').textContent = 'Last login: Unavailable';
+            }
+        }
+
+        // Simple helper to call purchase endpoint (will open payment modal or POST)
+        async function purchasePackage(packageId) {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                alert('Please log in first.');
+                window.location.href = '/user/login';
+                return;
+            }
+
+            try {
+                // Use form POST to /auth/user/purchase-package (note: route is mounted under /auth)
+                const form = new FormData();
+                form.append('package_id', packageId);
+
+                const resp = await fetch('/auth/user/purchase-package', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: form
+                });
+
+                if (!resp.ok) {
+                    const t = await resp.json().catch(()=>({detail:'Purchase failed'}));
+                    alert(t.detail || 'Purchase failed');
+                    return;
+                }
+
+                const data = await resp.json();
+                // For now show a simple confirmation and refresh dashboard
+                alert('Purchase initiated. Check transactions for status.');
+                loadDashboard();
+            } catch (err) {
+                console.error('Purchase error', err);
+                alert('Purchase failed.');
+            }
+        }
+
+        // HTML-escape helper
+        function escapeHtml(str) {
+            if (!str && str !== 0) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Load dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
         });
     </script>
 </body>
