@@ -1,770 +1,232 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wi-Fi Account Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-        }
-        .header {
-            background: #fff;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .header-title {
-            font-size: 1.5rem;
-            color: #007bff;
-        }
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .header-actions a {
-            text-decoration: none;
-            color: #007bff;
-            font-weight: 500;
-        }
-        .header-actions a:hover {
-            text-decoration: underline;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #666;
-        }
-        .loading-placeholder {
-            color: #999;
-            font-style: italic;
-        }
-        .nav {
-            background: #fff;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 0.5rem 2rem;
-        }
-        .nav-list {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-        .nav-item {
-            padding: 0.75rem 0;
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-        .nav-item:hover,
-        .nav-item.active {
-            color: #007bff;
-            border-bottom-color: #007bff;
-        }
-        .main-content {
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .section {
-            background: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        .welcome-section {
-            margin-bottom: 2rem;
-        }
-        .welcome-title {
-            font-size: 1.5rem;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        .welcome-desc {
-            color: #666;
-            font-size: 0.95rem;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            padding: 1.5rem;
-            border-radius: 8px;
-            color: #fff;
-            text-align: center;
-        }
-        .stat-card.blue {
-            background: #007bff;
-        }
-        .stat-card.teal {
-            background: #20c997;
-        }
-        .stat-card.green {
-            background: #28a745;
-        }
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-        }
-        .stat-label {
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
-        }
-        .quick-actions {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .action-btn {
-            background: #007bff;
-            color: #fff;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            font-weight: 500;
-            transition: background 0.3s ease;
-        }
-        .action-btn:hover {
-            background: #0056b3;
-        }
-        .section-title {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .packages-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-        .package-card {
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: box-shadow 0.3s ease;
-        }
-        .package-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .package-card.loading {
-            min-height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-        }
-        .package-name {
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        .package-price {
-            font-size: 1.5rem;
-            color: #007bff;
-            margin-bottom: 0.5rem;
-        }
-        .package-desc {
-            color: #666;
-            margin-bottom: 1rem;
-        }
-        .vouchers-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1rem;
-        }
-        .vouchers-table th,
-        .vouchers-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .vouchers-table th {
-            background: #f8f9fa;
-            font-weight: 500;
-            color: #666;
-        }
-        .voucher-status.active {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .account-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .account-card {
-            background: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .account-info {
-            margin-bottom: 1rem;
-        }
-        .account-label {
-            font-weight: 500;
-            color: #666;
-            display: block;
-            margin-bottom: 0.25rem;
-        }
-        .account-value {
-            color: #333;
-        }
-        .password-change-form {
-            display: none;
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 6px;
-            margin-top: 1rem;
-        }
-        .password-change-form.show {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.25rem;
-            font-weight: 500;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        .form-row {
-            display: flex;
-            gap: 1rem;
-        }
-        .form-row .form-group {
-            flex: 1;
-        }
-        .btn {
-            background: #28a745;
-            color: #fff;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.3s ease;
-        }
-        .btn:hover {
-            background: #218838;
-        }
-        .btn-secondary {
-            background: #6c757d;
-        }
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        .btn-primary {
-            background: #007bff;
-        }
-        .btn-primary:hover {
-            background: #0056b3;
-        }
-        .payment-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        .payment-modal.show {
-            display: flex;
-        }
-        .payment-content {
-            background: #fff;
-            padding: 2rem;
-            border-radius: 8px;
-            max-width: 400px;
-            width: 90%;
-        }
-        .payment-title {
-            margin-bottom: 1rem;
-        }
-        .payment-methods {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .payment-method {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: border-color 0.3s ease;
-        }
-        .payment-method:hover {
-            border-color: #007bff;
-        }
-        .payment-method input {
-            margin: 0;
-        }
-        @media (max-width: 768px) {
-            .nav-list {
-                flex-wrap: wrap;
-                gap: 1rem;
-            }
-            .quick-actions {
-                flex-direction: column;
-            }
-            .form-row {
-                flex-direction: column;
-            }
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>User Panel — Wi‑Fi Access</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #0066ff;
+      --accent-2: #7b61ff;
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius: 14px;
+      --max-width: 480px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:
+        radial-gradient(900px 400px at -10% -10%, rgba(123,97,255,0.04), transparent 6%),
+        radial-gradient(700px 300px at 110% 110%, rgba(0,102,255,0.03), transparent 6%),
+        var(--bg);
+      color: #0f172a;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Single-column centered card */
+    .panel {
+      width:100%;
+      max-width: calc(var(--max-width) + 44px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .card {
+      width:100%;
+      max-width: var(--max-width);
+      background: linear-gradient(180deg,var(--card), #fbfdff);
+      border-radius: calc(var(--radius) + 4px);
+      box-shadow: 0 18px 40px rgba(2,6,23,0.08);
+      overflow:hidden;
+      border: 1px solid rgba(2,6,23,0.04);
+      padding:28px;
+    }
+
+    .brand {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:16px;
+    }
+    .logo {
+      width:56px;
+      height:56px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      color:white;
+      font-weight:700;
+      font-size:18px;
+      background: linear-gradient(135deg,var(--accent), var(--accent-2));
+      box-shadow: 0 8px 26px rgba(61,90,240,0.10);
+      flex:0 0 56px;
+    }
+    .brand h1 { margin:0; font-size:1.05rem; }
+    .brand p { margin:0; color:var(--muted); font-size:0.92rem; }
+
+    h2 {
+      margin: 6px 0 12px;
+      font-size:1.25rem;
+      line-height:1.1;
+    }
+    .lead { color:var(--muted); margin-bottom:18px; font-size:0.95rem }
+
+    .section {
+      margin-bottom:20px;
+      padding:16px;
+      background: linear-gradient(180deg,#fbfdff,#f7fbff);
+      border-radius:12px;
+      border: 1px solid rgba(2,6,23,0.03);
+    }
+    .section h3 {
+      margin:0 0 8px 0;
+      font-size:1.1rem;
+      font-weight:600;
+      color:#0b1220;
+    }
+    .section p { margin:0; color:var(--muted); }
+
+    .voucher-list {
+      list-style:none;
+      padding:0;
+      margin:8px 0 0 0;
+    }
+    .voucher-item {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid rgba(2,6,23,0.06);
+    }
+    .voucher-item:last-child { border-bottom:none; }
+    .voucher-code {
+      font-family:monospace;
+      font-weight:700;
+      color:#071025;
+    }
+    .voucher-status {
+      font-size:0.9rem;
+      color:var(--success);
+    }
+
+    .actions {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+      margin-top:20px;
+    }
+
+    .btn {
+      appearance:none;
+      border:0;
+      padding:12px 16px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      flex:1;
+      max-width:180px;
+    }
+    .btn.primary {
+      background: linear-gradient(90deg,var(--accent), var(--accent-2));
+      color:white;
+      box-shadow: 0 10px 28px rgba(61,90,240,0.10);
+    }
+    .btn.secondary {
+      background:#fff;
+      color:var(--accent);
+      border:2px solid var(--accent);
+      box-shadow: 0 4px 12px rgba(0,102,255,0.15);
+    }
+
+    .links { display:flex; justify-content:space-between; align-items:center; margin-top:16px; font-size:0.92rem; }
+    a.small { color:var(--accent); text-decoration:none; font-weight:700; }
+
+    @media (max-width:520px) {
+      .card { padding:20px; border-radius:12px; }
+      .logo { width:48px; height:48px; }
+      .actions { flex-direction:column; gap:8px; }
+    }
+  </style>
 </head>
 <body>
-    <header class="header">
-        <div class="header-title">🌐 My Wi-Fi Account</div>
-        <div class="header-actions">
-            <a href="#" onclick="handleLogout()">🚪 Logout</a>
-            <div class="user-info">
-                📱 <span id="user-phone" class="loading-placeholder">Loading...</span>
-                •
-                ⏰ <span id="last-login" class="loading-placeholder">Last login: Loading...</span>
-            </div>
+  <div class="panel" role="main" aria-label="User panel dashboard">
+    <div class="card" role="region" aria-labelledby="panel-title">
+      <div class="brand" aria-hidden="true">
+        <div class="logo">Wi</div>
+        <div>
+          <h1>Wi‑Fi Access</h1>
+          <p class="muted">Your account dashboard</p>
         </div>
-    </header>
+      </div>
 
-    <nav class="nav">
-        <ul class="nav-list">
-            <li><a href="#" class="nav-item active" onclick="switchSection('dashboard')">📊 Dashboard</a></li>
-            <li><a href="#" class="nav-item" onclick="switchSection('packages')">📦 Buy Packages</a></li>
-            <li><a href="#" class="nav-item" onclick="switchSection('vouchers')">🎫 My Vouchers</a></li>
-            <li><a href="#" class="nav-item" onclick="switchSection('account')">👤 Account</a></li>
+      <h2 id="panel-title">Welcome back!</h2>
+      <div class="lead">Manage your vouchers and account settings.</div>
+
+      <div class="section">
+        <h3>Account Info</h3>
+        <p><strong>Mobile:</strong> +255712345678</p>
+        <p><strong>Status:</strong> Active</p>
+      </div>
+
+      <div class="section">
+        <h3>Your Vouchers</h3>
+        <ul class="voucher-list">
+          <li class="voucher-item">
+            <span class="voucher-code">ABC123XYZ9</span>
+            <span class="voucher-status">Active</span>
+          </li>
+          <li class="voucher-item">
+            <span class="voucher-code">DEF456UVW0</span>
+            <span class="voucher-status">Expired</span>
+          </li>
         </ul>
-    </nav>
+      </div>
 
-    <main class="main-content">
-        <!-- Dashboard Section -->
-        <section id="dashboard-section">
-            <div class="welcome-section">
-                <h2 class="welcome-title">👋 Welcome back!</h2>
-                <p class="welcome-desc">Manage your Wi-Fi vouchers, purchase new packages, and monitor your internet usage from this dashboard.</p>
-            </div>
+      <div class="actions">
+        <button class="btn primary" onclick="window.location.href='/user/splash'">Get Voucher</button>
+        <button class="btn secondary" onclick="logout()">Logout</button>
+      </div>
 
-            <div class="stats-grid">
-                <div class="stat-card blue">
-                    <div class="stat-value" id="total-vouchers">-</div>
-                    <div class="stat-label">Total Vouchers</div>
-                </div>
-                <div class="stat-card green">
-                    <div class="stat-value" id="active-vouchers">-</div>
-                    <div class="stat-label">Active Vouchers</div>
-                </div>
-                <div class="stat-card teal">
-                    <div class="stat-value" id="total-spent">-</div>
-                    <div class="stat-label">Total Spent (TZS)</div>
-                </div>
-            </div>
-
-            <div class="quick-actions">
-                <a href="#" class="action-btn" onclick="switchSection('packages')">💰 Buy New Package</a>
-                <a href="#" class="action-btn" onclick="switchSection('vouchers')">🎫 View My Vouchers</a>
-            </div>
-        </section>
-
-        <!-- Buy Packages Section -->
-        <section id="packages-section" style="display: none;">
-            <h3 class="section-title">📦 Available Packages</h3>
-            <div class="packages-grid" id="packages-grid">
-                <div class="package-card loading">Loading available packages...</div>
-                <!-- Example populated card: 
-                <div class="package-card">
-                    <div class="package-name">Basic Plan</div>
-                    <div class="package-price">5,000 TZS</div>
-                    <div class="package-desc">1GB data, 7 days validity</div>
-                    <button class="btn btn-primary" onclick="selectPackage('Basic Plan', 5000)">Buy Now</button>
-                </div>
-                -->
-            </div>
-        </section>
-
-        <!-- My Vouchers Section -->
-        <section id="vouchers-section" style="display: none;">
-            <h3 class="section-title">🎫 My Voucher Codes</h3>
-            <table class="vouchers-table" id="vouchers-table">
-                <thead>
-                    <tr>
-                        <th>Voucher Code</th>
-                        <th>Status</th>
-                        <th>Expiration</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="3" class="loading-placeholder">Loading your vouchers...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-
-        <!-- Account Section -->
-        <section id="account-section" style="display: none;">
-            <h3 class="section-title">👤 Account Information</h3>
-            <div class="account-grid">
-                <div class="account-card">
-                    <div class="account-info">
-                        <span class="account-label">Mobile Number:</span>
-                        <span id="account-mobile" class="account-value loading-placeholder">Loading...</span>
-                    </div>
-                    <div class="account-info">
-                        <span class="account-label">Account Created:</span>
-                        <span id="account-created" class="account-value loading-placeholder">Loading...</span>
-                    </div>
-                    <div class="account-info">
-                        <span class="account-label">Account Status:</span>
-                        <span id="account-status" class="account-value loading-placeholder">Loading...</span>
-                    </div>
-                </div>
-            </div>
-
-            <h4 class="section-title" style="font-size: 1rem;">🔧 Account Actions</h4>
-            <button class="action-btn" onclick="togglePasswordChange()">🔐 Change Password</button>
-
-            <div id="password-change-form" class="password-change-form">
-                <h4>Change Your Password</h4>
-                <form>
-                    <div class="form-group">
-                        <label for="current-password">Current Password</label>
-                        <input type="password" id="current-password" placeholder="Enter your current password" required>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="new-password">New Password</label>
-                            <input type="password" id="new-password" placeholder="Enter a new password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirm-password">Confirm New Password</label>
-                            <input type="password" id="confirm-password" placeholder="Confirm your new password" required>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 1rem;">
-                        <button type="submit" class="btn">Update Password</button>
-                        <button type="button" class="btn btn-secondary" onclick="togglePasswordChange()">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </section>
-    </main>
-
-    <!-- Payment Modal -->
-    <div id="payment-modal" class="payment-modal">
-        <div class="payment-content">
-            <h3 class="payment-title">Complete Your Purchase</h3>
-            <p>Selected Package: <span id="selected-package-name"></span></p>
-            <p>Amount: <span id="selected-package-price"></span> TZS</p>
-            <div class="payment-methods">
-                <label class="payment-method">
-                    <input type="radio" name="payment-method" value="mpesa" checked>
-                    <span>💳 M-Pesa</span>
-                </label>
-                <label class="payment-method">
-                    <input type="radio" name="payment-method" value="card">
-                    <span>💳 Credit/Debit Card</span>
-                </label>
-                <label class="payment-method">
-                    <input type="radio" name="payment-method" value="voucher">
-                    <span>🎫 Use Voucher</span>
-                </label>
-            </div>
-            <button class="btn" style="width: 100%; margin-top: 1rem;" onclick="processPayment()">Pay Now</button>
-            <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="closePaymentModal()">Cancel</button>
-        </div>
+      <div class="links" aria-hidden="true">
+        <span class="muted">Need help? Contact support</span>
+        <a class="small" href="/">Back to home</a>
+      </div>
     </div>
+  </div>
 
-    <script>
-        function switchSection(section) {
-            document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
-            document.getElementById(section + '-section').style.display = 'block';
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            event.target.classList.add('active');
-        }
+  <script>
+    function logout() {
+      localStorage.removeItem('access_token');
+      window.location.href = '/';
+    }
 
-        function togglePasswordChange() {
-            const form = document.getElementById('password-change-form');
-            form.classList.toggle('show');
-        }
-
-        function handleLogout() {
-            // Clear the access token from localStorage (same way it's stored during login)
-            localStorage.removeItem('access_token');
-            
-            // Show brief feedback to user
-            alert('You have been logged out successfully');
-            
-            // Redirect to the login page
-            window.location.href = '/user/login';
-        }
-
-        function selectPackage(name, price) {
-            document.getElementById('selected-package-name').textContent = name;
-            document.getElementById('selected-package-price').textContent = price;
-            document.getElementById('payment-modal').classList.add('show');
-        }
-
-        function closePaymentModal() {
-            document.getElementById('payment-modal').classList.remove('show');
-        }
-
-        function processPayment() {
-            // Assume endpoint call
-            alert('Processing payment...');
-            closePaymentModal();
-        }
-
-        // Close modal on outside click
-        document.getElementById('payment-modal').addEventListener('click', function(e) {
-            if (e.target === this) closePaymentModal();
-        });
-
-        // ---------------------------
-        // New: load dashboard data
-        // ---------------------------
-        async function loadDashboard() {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                // Not logged in: redirect to login
-                window.location.href = '/user/login';
-                return;
-            }
-
-            try {
-                const resp = await fetch('/auth/panel', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (resp.status === 401) {
-                    // Token invalid/expired: clear and redirect
-                    localStorage.removeItem('access_token');
-                    alert('Session expired. Please log in again.');
-                    window.location.href = '/user/login';
-                    return;
-                }
-
-                if (!resp.ok) {
-                    console.error('Failed to fetch dashboard:', resp.status, await resp.text());
-                    // show minimal UI fallback
-                    document.getElementById('user-phone').textContent = 'Unavailable';
-                    document.getElementById('last-login').textContent = 'Last login: Unavailable';
-                    return;
-                }
-
-                const data = await resp.json();
-
-                // Expected shape: { account: {...}, vouchers: [...], transactions: [...], available_packages: [...] }
-                const account = data.account || data.user || null;
-                const vouchers = data.vouchers || [];
-                const transactions = data.transactions || [];
-                const packages = data.available_packages || data.packages || [];
-
-                // Account info
-                if (account) {
-                    const mobile = account.mobile_number || account.mobile || 'Unknown';
-                    const lastLogin = account.last_login || account.lastLogin || account.updated_at || null;
-                    const createdAt = account.created_at || account.createdAt || null;
-                    const status = typeof account.is_active !== 'undefined' ? (account.is_active ? 'Active' : 'Inactive') : 'Unknown';
-
-                    document.getElementById('user-phone').textContent = mobile;
-                    document.getElementById('account-mobile').textContent = mobile;
-                    document.getElementById('account-status').textContent = status;
-
-                    if (lastLogin) {
-                        let d = new Date(lastLogin);
-                        document.getElementById('last-login').textContent = `Last login: ${d.toLocaleString()}`;
-                    } else {
-                        document.getElementById('last-login').textContent = 'Last login: N/A';
-                    }
-
-                    if (createdAt) {
-                        let d2 = new Date(createdAt);
-                        document.getElementById('account-created').textContent = d2.toLocaleString();
-                    } else {
-                        document.getElementById('account-created').textContent = 'N/A';
-                    }
-                } else {
-                    document.getElementById('user-phone').textContent = 'Unknown';
-                    document.getElementById('last-login').textContent = 'Last login: N/A';
-                }
-
-                // Vouchers summary
-                const totalVouchersEl = document.getElementById('total-vouchers');
-                const activeVouchersEl = document.getElementById('active-vouchers');
-
-                totalVouchersEl.textContent = vouchers.length;
-                const activeCount = vouchers.filter(v => (v.status || '').toLowerCase() === 'active').length;
-                activeVouchersEl.textContent = activeCount;
-
-                // Transactions summary (sum amounts)
-                let totalSpent = 0;
-                transactions.forEach(t => {
-                    const amt = parseFloat(t.amount || t.price || t.total || 0);
-                    if (!isNaN(amt)) totalSpent += amt;
-                });
-                document.getElementById('total-spent').textContent = totalSpent.toLocaleString();
-
-                // Populate packages grid
-                const packagesGrid = document.getElementById('packages-grid');
-                packagesGrid.innerHTML = '';
-                if (packages.length === 0) {
-                    const noPackages = document.createElement('div');
-                    noPackages.className = 'package-card loading';
-                    noPackages.textContent = 'No available packages.';
-                    packagesGrid.appendChild(noPackages);
-                } else {
-                    packages.forEach(p => {
-                        const card = document.createElement('div');
-                        card.className = 'package-card';
-                        const name = p.name || p.id || 'Package';
-                        const price = (p.price !== undefined && p.price !== null) ? Number(p.price).toLocaleString() : 'N/A';
-                        const duration = p.duration ? `${p.duration} min` : 'N/A';
-                        const dataLimit = (p.data_limit || p.data_limit === 0) ? `${p.data_limit} MB` : 'Unlimited';
-                        card.innerHTML = `
-                            <div class="package-name">${escapeHtml(name)}</div>
-                            <div class="package-price">${price} ${p.currency || 'TZS'}</div>
-                            <div class="package-desc">${escapeHtml(p.description || `${dataLimit}, ${duration}`)}</div>
-                            <button class="btn btn-primary" onclick="purchasePackage('${p.id || p.name}')">Buy Now</button>
-                        `;
-                        packagesGrid.appendChild(card);
-                    });
-                }
-
-                // Populate vouchers table
-                const vouchersTableBody = document.querySelector('#vouchers-table tbody');
-                vouchersTableBody.innerHTML = '';
-                if (vouchers.length === 0) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td colspan="3" class="loading-placeholder">You have no vouchers yet.</td>`;
-                    vouchersTableBody.appendChild(tr);
-                } else {
-                    vouchers.forEach(v => {
-                        const tr = document.createElement('tr');
-                        const code = escapeHtml(v.code || v.id || '');
-                        const status = (v.status || '').toLowerCase();
-                        const expires = v.expires_at || v.expiresAt || v.expires || '';
-                        let statusClass = '';
-                        if (status === 'active') statusClass = 'voucher-status active';
-                        tr.innerHTML = `
-                            <td>${code}</td>
-                            <td class="${statusClass}">${escapeHtml(v.status || '')}</td>
-                            <td>${expires ? (new Date(expires)).toLocaleString() : 'N/A'}</td>
-                        `;
-                        vouchersTableBody.appendChild(tr);
-                    });
-                }
-
-            } catch (err) {
-                console.error('Error loading dashboard:', err);
-                // Fail gracefully
-                document.getElementById('user-phone').textContent = 'Unavailable';
-                document.getElementById('last-login').textContent = 'Last login: Unavailable';
-            }
-        }
-
-        // Simple helper to call purchase endpoint (will open payment modal or POST)
-        async function purchasePackage(packageId) {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                alert('Please log in first.');
-                window.location.href = '/user/login';
-                return;
-            }
-
-            try {
-                // Use form POST to /auth/user/purchase-package (note: route is mounted under /auth)
-                const form = new FormData();
-                form.append('package_id', packageId);
-
-                const resp = await fetch('/auth/user/purchase-package', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: form
-                });
-
-                if (!resp.ok) {
-                    const t = await resp.json().catch(()=>({detail:'Purchase failed'}));
-                    alert(t.detail || 'Purchase failed');
-                    return;
-                }
-
-                const data = await resp.json();
-                // For now show a simple confirmation and refresh dashboard
-                alert('Purchase initiated. Check transactions for status.');
-                loadDashboard();
-            } catch (err) {
-                console.error('Purchase error', err);
-                alert('Purchase failed.');
-            }
-        }
-
-        // HTML-escape helper
-        function escapeHtml(str) {
-            if (!str && str !== 0) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        // Load dashboard when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDashboard();
-        });
-    </script>
+    // Check if logged in
+    document.addEventListener('DOMContentLoaded', function() {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        window.location.href = '/user/login';
+      }
+    });
+  </script>
 </body>
 </html>

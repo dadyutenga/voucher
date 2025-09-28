@@ -289,7 +289,7 @@
       }
     })();
 
-    // Form submit: send as application/x-www-form-urlencoded and ensure redirect goes to existing panel route
+    // Form submit: send as application/x-www-form-urlencoded and redirect to /user/panel
     document.getElementById('userLoginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       setLoading(true);
@@ -301,7 +301,6 @@
       try {
         formatMobileNumber(mobileInput);
 
-        // Use URLSearchParams().toString() to ensure proper form-encoded payload
         const body = new URLSearchParams({
           username: mobileInput.value,
           password: passwordInput.value
@@ -313,29 +312,17 @@
           body: body
         });
 
-        // parse JSON if possible
         let data;
         try { data = await response.json(); } catch (err) { data = {}; }
 
         if (response.ok && data.access_token) {
           localStorage.setItem('access_token', data.access_token);
           showSuccess('Login successful — redirecting...');
-
-          // Try to navigate to whichever panel path exists
-          // First try /user/panel (common), if not available fall back to /auth/user/panel
-          try {
-            const head = await fetch('/user/panel', { method: 'HEAD' });
-            if (head.ok) {
-              window.location.href = '/user/panel';
-              return;
-            }
-          } catch (err) {
-            // ignore network errors here and try fallback
-          }
-
-          // fallback
-          window.location.href = '/auth/user/panel';
-          return;
+          
+          // Redirect to the main.py route
+          setTimeout(() => {
+            window.location.href = '/user/panel';
+          }, 800);
         } else {
           showError(data.detail || data.message || 'Login failed — check credentials.');
         }
@@ -351,20 +338,12 @@
       formatMobileNumber(this);
     });
 
-    // If already logged in, redirect to whichever panel exists
-    document.addEventListener('DOMContentLoaded', async function() {
+    // If already logged in, redirect to /user/panel
+    document.addEventListener('DOMContentLoaded', function() {
       const token = localStorage.getItem('access_token');
-      if (!token) return;
-
-      try {
-        const head = await fetch('/user/panel', { method: 'HEAD' });
-        if (head.ok) {
-          window.location.href = '/user/panel';
-          return;
-        }
-      } catch (err) { /* ignore */ }
-
-      window.location.href = '/auth/user/panel';
+      if (token) {
+        window.location.href = '/user/panel';
+      }
     });
   </script>
 </body>
