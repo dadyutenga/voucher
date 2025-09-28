@@ -220,7 +220,6 @@
             <div class="loading" aria-hidden="true"></div>
           </button>
 
-
           <div style="margin-left:auto">
             <a class="small" href="/user/register">Create account</a>
           </div>
@@ -280,10 +279,17 @@
       else input.value = value;
     }
 
-    document.getElementById('show-help').addEventListener('click', () => {
-      alert('Help:\n• Use your Tanzanian mobile number (e.g. +255712345678).\n• If you don\'t have an account, create one from the link.');
-    });
+    // attach help listener only if the element exists (prevents runtime error)
+    (function attachOptionalListeners() {
+      const showHelp = document.getElementById('show-help');
+      if (showHelp) {
+        showHelp.addEventListener('click', () => {
+          alert('Help:\n• Use your Tanzanian mobile number (e.g. +255712345678).\n• If you don ')
+        });
+      }
+    })();
 
+    // Form submit: send as application/x-www-form-urlencoded and ensure redirect goes to existing panel route
     document.getElementById('userLoginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       setLoading(true);
@@ -295,21 +301,41 @@
       try {
         formatMobileNumber(mobileInput);
 
+        // Use URLSearchParams().toString() to ensure proper form-encoded payload
+        const body = new URLSearchParams({
+          username: mobileInput.value,
+          password: passwordInput.value
+        }).toString();
+
         const response = await fetch('/auth/token', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            username: mobileInput.value,
-            password: passwordInput.value
-          })
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: body
         });
 
-        const data = await response.json();
+        // parse JSON if possible
+        let data;
+        try { data = await response.json(); } catch (err) { data = {}; }
 
         if (response.ok && data.access_token) {
           localStorage.setItem('access_token', data.access_token);
           showSuccess('Login successful — redirecting...');
-          setTimeout(() => window.location.href = '/user/panel', 800);
+
+          // Try to navigate to whichever panel path exists
+          // First try /user/panel (common), if not available fall back to /auth/user/panel
+          try {
+            const head = await fetch('/user/panel', { method: 'HEAD' });
+            if (head.ok) {
+              window.location.href = '/user/panel';
+              return;
+            }
+          } catch (err) {
+            // ignore network errors here and try fallback
+          }
+
+          // fallback
+          window.location.href = '/auth/user/panel';
+          return;
         } else {
           showError(data.detail || data.message || 'Login failed — check credentials.');
         }
@@ -325,11 +351,20 @@
       formatMobileNumber(this);
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
+    // If already logged in, redirect to whichever panel exists
+    document.addEventListener('DOMContentLoaded', async function() {
       const token = localStorage.getItem('access_token');
-      if (token) {
-        window.location.href = '/user/panel';
-      }
+      if (!token) return;
+
+      try {
+        const head = await fetch('/user/panel', { method: 'HEAD' });
+        if (head.ok) {
+          window.location.href = '/user/panel';
+          return;
+        }
+      } catch (err) { /* ignore */ }
+
+      window.location.href = '/auth/user/panel';
     });
   </script>
 </body>
